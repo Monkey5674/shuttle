@@ -1,5 +1,10 @@
 [
- {
+  {
+    "image": "/assets/img/gs/taco-clicker.png",
+    "loc": "/games/taco-clicker/",
+    "title": "Manuel's Taco Clicker"
+  },
+  {
     "image": "/assets/img/gs/roblox.jpeg",
     "loc": "/#aHR0cHM6Ly9reGQuZm0vcm9ibG94L3YyLw==",
     "title": "Shuttle Games"

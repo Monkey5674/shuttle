@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Manuel's Taco Clicker</title>
+  <meta name="description" content="Help Manuel sell tacos: from a backyard table to a food truck fleet, a Depop shop and a taco empire. A cookie-clicker style idle game.">
+  <meta name="theme-color" content="#17110f">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 200'%3E%3Cpath d='M22 72A98 98 0 0 0 218 72Z' fill='%23d8912a' stroke='%233a2418' stroke-width='8'/%3E%3Cpath d='M26 84C34 56 56 54 66 70 72 46 96 46 104 66 110 44 136 44 142 66 150 46 174 48 178 70 188 52 210 56 214 84Z' fill='%238fd14f' stroke='%233a2418' stroke-width='6'/%3E%3Ccircle cx='98' cy='80' r='15' fill='%23ff5a3c' stroke='%233a2418' stroke-width='6'/%3E%3Cpath d='M22 96A98 98 0 0 0 218 96Z' fill='%23f2b134' stroke='%233a2418' stroke-width='8'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-era="1">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><defs>
+<symbol id="taco" viewBox="0 0 240 200"><ellipse cx="120" cy="186" rx="96" ry="9" fill="#000" opacity=".28"/>
+  <path d="M22 72 A98 98 0 0 0 218 72 Z" fill="#d8912a" stroke="#3a2418" stroke-width="6" stroke-linejoin="round"/>
+  <g stroke="#3a2418" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M26 84 C34 56 56 54 66 70 C72 46 96 46 104 66 C110 44 136 44 142 66 C150 46 174 48 178 70 C188 52 210 56 214 84 Z" fill="#8fd14f"/>
+    <path d="M40 90 C42 72 74 70 78 90 Z" fill="#8a4b2a"/>
+    <path d="M134 92 C138 70 176 70 182 92 Z" fill="#8a4b2a"/>
+    <circle cx="98" cy="80" r="15" fill="#ff5a3c"/>
+    <circle cx="200" cy="88" r="11" fill="#ff5a3c"/>
+    <path d="M112 90 l20 -14 l7 5 l-20 14 z" fill="#ffd54a"/>
+    <path d="M52 94 l18 -12 l6 5 l-18 12 z" fill="#ffd54a"/>
+    <path d="M168 96 l16 -10 l6 5 l-16 10 z" fill="#ffd54a"/>
+    <path d="M150 74 c6 -12 18 -10 20 -2 c-8 -2 -14 0 -20 2 z" fill="#3f9e38"/>
+    <path d="M80 62 c-8 -10 2 -20 10 -14 c-4 4 -6 8 -10 14 z" fill="#3f9e38"/>
+  </g>
+  <path d="M22 96 A98 98 0 0 0 218 96 Z" fill="#f2b134" stroke="#3a2418" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M34 96 A86 86 0 0 0 206 96" fill="none" stroke="#ffd479" stroke-width="6" stroke-linecap="round" opacity=".75"/>
+  <g fill="#d8912a" opacity=".85">
+    <circle cx="78" cy="138" r="4"/><circle cx="118" cy="166" r="4"/><circle cx="162" cy="140" r="4"/><circle cx="100" cy="118" r="3"/><circle cx="150" cy="118" r="3"/><circle cx="130" cy="146" r="3"/>
+  </g>
+  <g stroke="#3a2418" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M124 92 l4 22 l7 -2 l-3 -22 z" fill="#ffd54a"/>
+    <path d="M60 92 l2 18 l7 -1 l-1 -19 z" fill="#ffd54a"/>
+    <path d="M186 94 l-1 16 l7 1 l2 -17 z" fill="#ffd54a"/>
+  </g></symbol>
+<symbol id="i-stats" viewBox="0 0 24 24"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></symbol>
+<symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"></path><path d="M8 6H5a1 1 0 0 0-1 1 4 4 0 0 0 4 4"></path><path d="M16 6h3a1 1 0 0 1 1 1 4 4 0 0 1-4 4"></path><path d="M12 13v4"></path><path d="M8 21h8"></path><path d="M10 17h4v4"></path></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 0-3 3z"></path><path d="M4 17a3 3 0 0 1 3-3h12"></path><path d="M8 8h7"></path></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></symbol>
+<symbol id="i-truck" viewBox="0 0 24 24"><path d="M2 7h11v9H2z"></path><path d="M13 10h4l3 3v3h-7z"></path><circle cx="6" cy="18" r="2"></circle><circle cx="17" cy="18" r="2"></circle></symbol>
+<symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l9 9-8 8z"></path><circle cx="7.5" cy="8.5" r="1.5"></circle></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></symbol>
+<symbol id="i-press" viewBox="0 0 24 24"><rect x="4" y="12" width="16" height="5" rx="1.5"></rect><path d="M6 12V9a6 6 0 0 1 12 0v3"></path><path d="M12 3v2"></path><path d="M8 20h8"></path></symbol>
+<symbol id="i-cousin" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="i-salsa" viewBox="0 0 24 24"><path d="M3 10h18a9 9 0 0 1-18 0z"></path><path d="M8 6c1-2 3-2 4 0M13 6c1-2 3-2 4 0"></path></symbol>
+<symbol id="i-stand" viewBox="0 0 24 24"><path d="M3 8l2-4h14l2 4"></path><path d="M3 8c0 2 1.5 3 3 3s3-1 3-3c0 2 1.5 3 3 3s3-1 3-3c0 2 1.5 3 3 3s3-1 3-3"></path><path d="M5 11v9h14v-9"></path><path d="M9 20v-5h6v5"></path></symbol>
+<symbol id="i-fleet" viewBox="0 0 24 24"><path d="M2 9h9v7H2z"></path><path d="M11 11h3l2 2v3h-5z"></path><path d="M8 5h9v3"></path><path d="M17 7h3l2 2v2"></path><circle cx="5" cy="18" r="1.5"></circle><circle cx="14" cy="18" r="1.5"></circle></symbol>
+<symbol id="i-catering" viewBox="0 0 24 24"><path d="M3 16h18"></path><path d="M5 16a7 7 0 0 1 14 0"></path><path d="M12 7V5"></path><path d="M3 19h18"></path></symbol>
+<symbol id="i-depop" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"></rect><path d="M10 18h4"></path><path d="M9 8h6l-3 5z"></path></symbol>
+<symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3-1-3 0-5 0-7z"></path></symbol>
+<symbol id="i-collab" viewBox="0 0 24 24"><path d="M3 11v2h3l8 4V7l-8 4z"></path><path d="M17 9a4 4 0 0 1 0 6"></path><path d="M19 6a8 8 0 0 1 0 12"></path></symbol>
+<symbol id="i-franchise" viewBox="0 0 24 24"><path d="M3 21h18"></path><path d="M5 21V8l7-4 7 4v13"></path><path d="M9 21v-6h6v6"></path><path d="M9 11h2M13 11h2"></path></symbol>
+<symbol id="i-factory" viewBox="0 0 24 24"><path d="M3 21V10l5 3v-3l5 3v-3l5 3v8z"></path><path d="M18 10V4h3v6"></path><path d="M7 17h2M11 17h2M15 17h2"></path></symbol>
+<symbol id="i-orbital" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M3.5 9.5c-2 3 5 8 12 8 4 0 6-1 5-3"></path><path d="M20.5 14.5c2-3-5-8-12-8-4 0-6 1-5 3"></path></symbol>
+<symbol id="i-table" viewBox="0 0 24 24"><path d="M3 9h18"></path><path d="M5 9l-1 11M19 9l1 11"></path><path d="M7 15h10"></path></symbol>
+<symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 18h18l1-11-5 4-5-7-5 7-5-4z"></path><path d="M4 21h16"></path></symbol>
+<symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"></path></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l4 4L19 7"></path></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V5a1.5 1.5 0 0 1 3 0v6"></path><path d="M11 11V4a1.5 1.5 0 0 1 3 0v7"></path><path d="M14 11V6a1.5 1.5 0 0 1 3 0v6"></path><path d="M17 12a1.5 1.5 0 0 1 3 0v3a6 6 0 0 1-6 6h-2a6 6 0 0 1-5-2.7L4.5 14a1.5 1.5 0 0 1 2.4-1.8L8 13.5"></path></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"></path></symbol>
+<symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v10"></path><path d="M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.3c0 1.4 1.5 2 3 2.4s3 1 3 2.4c0 1.3-1.3 2.4-3 2.4s-3-1.1-3-2.5"></path></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></symbol>
+<symbol id="i-shirt" viewBox="0 0 24 24"><path d="M8 4l4 2 4-2 5 3-2 4-2-1v11H7V10l-2 1-2-4z"></path></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4z"></path><path d="M3 8v9l9 4 9-4V8"></path><path d="M12 12v9"></path></symbol>
+<symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><path d="M12 12l6-6"></path><circle cx="12" cy="12" r="1"></circle></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path><path d="M9 12l2 2 4-4"></path></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></symbol>
+<symbol id="i-chef" viewBox="0 0 24 24"><path d="M7 12a4 4 0 0 1-1-7.9A5 5 0 0 1 12 3a5 5 0 0 1 6 1.1A4 4 0 0 1 17 12v8H7z"></path><path d="M7 16h10"></path></symbol>
+<symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1-4 1-9 7-12 6 3 8 8 7 12l-3-1-2 3h-4l-2-3z"></path><circle cx="12" cy="9" r="2"></circle><path d="M9 20l3 2 3-2"></path></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M4 20h16"></path></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V3"></path><path d="M7 8l5-5 5 5"></path><path d="M4 20h16"></path></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 14h10l1-14"></path></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></symbol>
+<symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10z"></path><path d="M16 9a4 4 0 0 1 0 6"></path></symbol>
+<symbol id="i-mouse" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="5"></rect><path d="M12 7v3"></path></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4"></path><path d="M5 4h12l-2 4 2 4H5"></path></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></symbol>
+<symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"></path></symbol>
+</defs></svg>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="taco-mark" viewBox="0 0 240 200" aria-hidden="true"><use href="#taco"></use></svg>
+      <h1>Manuel's <em>Taco</em> Clicker</h1>
+      <div class="era-badge" id="eraBadge"><svg class="icon"><use id="eraBadgeIcon" href="#i-table"></use></svg><span id="eraBadgeText">Chapter 1 · Backyard Table</span></div>
+    </div>
+    <nav class="topnav" aria-label="Game menus">
+      <button class="btn" data-open="stats"><svg class="icon"><use href="#i-stats"></use></svg><span>Stats</span></button>
+      <button class="btn" data-open="achievements"><svg class="icon"><use href="#i-trophy"></use></svg><span>Achievements</span></button>
+      <button class="btn" data-open="recipes"><svg class="icon"><use href="#i-book"></use></svg><span>Notebook</span></button>
+      <button class="btn" data-open="options"><svg class="icon"><use href="#i-gear"></use></svg><span>Options</span></button>
+    </nav>
+    <button class="btn btn-icon menu-btn" id="menuBtn" aria-label="Menu"><svg class="icon"><use href="#i-menu"></use></svg></button>
+  </header>
+
+  <main class="layout" id="layout">
+    <section class="panel col kitchen active" id="col-kitchen" aria-label="Kitchen">
+      <div class="news" aria-live="polite"><span class="news-tag">NEWS</span><span class="news-text" id="newsText">Manuel unfolds a table in Abuela's backyard.</span></div>
+      <div class="kitchen-body">
+        <div class="era-badge mobile-era" id="eraBadgeMobile"><svg class="icon"><use id="eraBadgeIconMobile" href="#i-table"></use></svg><span id="eraBadgeTextMobile">Chapter 1 · Backyard Table</span></div>
+        <div class="cash-block">
+          <div class="label">Cash</div>
+          <div class="cash num" id="cash">$0</div>
+          <div class="cps"><b class="num" id="cps">$0</b> per second</div>
+        </div>
+        <div class="scene" id="scene">
+          <svg class="scene-art" id="sceneArt" viewBox="0 0 420 380" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+          <div class="scene-glow"></div>
+          <button class="taco-btn" id="tacoBtn" aria-label="Sell a taco" title="Sell a taco">
+            <svg viewBox="0 0 240 200" aria-hidden="true"><use href="#taco"></use></svg>
+          </button>
+          <div class="floaters" id="floaters"></div>
+        </div>
+        <div class="kitchen-stats">
+          <div>Tacos sold <b class="num" id="handSold">0</b></div>
+          <div>Per click <b class="num" id="clickValue">$1</b></div>
+        </div>
+        <div class="hint"><svg class="icon"><use href="#i-hand"></use></svg><span id="hintText">Click the taco. Space works too.</span></div>
+      </div>
+    </section>
+
+    <section class="col journey scroll" id="col-journey" aria-label="Manuel's journey">
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Manuel's Journey</h3><div class="muted" id="nextEra" style="font-size:12px"></div></div>
+        <div class="progress" id="eraProgress"><i></i></div>
+        <div class="progress-meta"><span><b class="strong num" id="runEarned">$0</b> earned this run</span><span class="num" id="eraPct">0%</span></div>
+        <div class="chips" id="eraChips"></div>
+        <div class="buffs"><span class="label">Active</span><div class="buffs" id="buffs"><span class="buffs-empty">No boosts right now. Watch for a golden taco.</span></div></div>
+      </div>
+      <div class="card" id="depopCard">
+        <div class="card-head"><h3 class="card-title">Manuel's Depop Shop</h3><div class="hype" id="hypeBox" hidden><span>Hype</span><div class="progress thin"><i id="hypeBar"></i></div><b class="num" id="hypePct">0%</b></div></div>
+        <div id="depopBody"></div>
+        <div class="depop-stats" id="depopStats" hidden></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Manuel's Journal</h3></div>
+        <div class="journal" id="journal"></div>
+      </div>
+    </section>
+
+    <aside class="panel col shop" id="col-shop" aria-label="Shop">
+      <div class="shop-head">
+        <h3 class="shop-title">Shop</h3>
+        <div class="seg" id="buySeg" role="group" aria-label="Buy amount">
+          <button class="on" data-amount="1">1</button>
+          <button data-amount="10">10</button>
+          <button data-amount="100">100</button>
+          <button data-amount="max">Max</button>
+          <span class="seg-sep"></span>
+          <button data-mode="sell" title="Sell businesses for 25% back">Sell</button>
+        </div>
+      </div>
+      <div class="scroll" style="flex:1 1 auto; min-height:0">
+        <div class="shop-section">
+          <div class="shop-section-head"><span class="label">Upgrades</span><span id="upgradeCount"></span></div>
+          <div class="tiles" id="upgradeTiles"></div>
+        </div>
+        <div class="producers" id="producers"><span class="label" style="padding:4px 4px 0">Businesses</span></div>
+      </div>
+    </aside>
+
+    <div class="golden-layer" id="goldenLayer"></div>
+  </main>
+
+  <nav class="tabbar" aria-label="Sections">
+    <button class="on" data-tab="kitchen"><svg class="icon"><use href="#i-hand"></use></svg><span>Kitchen</span></button>
+    <button data-tab="journey"><svg class="icon"><use href="#i-truck"></use></svg><span>Journey</span></button>
+    <button data-tab="shop"><svg class="icon"><use href="#i-stats"></use></svg><span>Shop</span></button>
+  </nav>
+
+  <div class="tooltip" id="tooltip" role="tooltip"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="modal-root" id="modalRoot"></div>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
