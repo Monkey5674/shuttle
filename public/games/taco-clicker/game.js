@@ -170,6 +170,7 @@ function sanitize(raw) {
   if (raw.stats && typeof raw.stats === 'object') Object.keys(s.stats).forEach((k) => { s.stats[k] = sane(raw.stats[k], 0, 1e300); });
   if (raw.opts && typeof raw.opts === 'object') Object.keys(s.opts).forEach((k) => { if (typeof raw.opts[k] === 'boolean') s.opts[k] = raw.opts[k]; });
   if (raw.tut && typeof raw.tut === 'object') { s.tut.clicks = saneInt(raw.tut.clicks, 0, 1000); s.tut.bought = !!raw.tut.bought; }
+  if (P.some((p) => s.producers[p.id] > 0)) { s.tut.bought = true; s.tut.clicks = Math.max(s.tut.clicks, 5); }
   // migrations by version would go here (raw.v < DATA.version)
   return s;
 }
@@ -206,7 +207,9 @@ function importSave(str) {
 }
 
 /* ---------- economy ---------- */
-const has = (id) => S.upgrades.includes(id);
+let upgSet = new Set();
+function syncUpgSet() { upgSet = new Set(S.upgrades); }
+const has = (id) => { if (upgSet.size !== S.upgrades.length) syncUpgSet(); return upgSet.has(id); };
 const hasRecipe = (id) => S.recipes.includes(id);
 function tiersOwned(pid) { let n = 0; for (let k = 1; k <= 6 + OPEN_TIERS; k++) if (has(pid + '_t' + k)) n++; return n; }
 function producerMult(pid) {
@@ -234,7 +237,11 @@ function incomeLayers(withBuffs = true) {
   }
   return L;
 }
-function globalMult(withBuffs = true) { return incomeLayers(withBuffs).reduce((m, l) => m * l.mult, 1); }
+let frameId = 0; const gmCache = { frame: -1, on: 0, off: 0 };
+function globalMult(withBuffs = true) {
+  if (gmCache.frame !== frameId) { gmCache.frame = frameId; gmCache.on = incomeLayers(true).reduce((m, l) => m * l.mult, 1); gmCache.off = incomeLayers(false).reduce((m, l) => m * l.mult, 1); }
+  return withBuffs ? gmCache.on : gmCache.off;
+}
 function producerCps(pid, withBuffs = true) { return S.producers[pid] * producerRate(pid) * globalMult(withBuffs); }
 function cps(withBuffs = true) { let sum = 0; for (const p of P) if (S.producers[p.id] > 0) sum += S.producers[p.id] * producerRate(p.id); return sum * globalMult(withBuffs); }
 function clickLayers() {
@@ -321,7 +328,7 @@ function buyRecipe(id) {
   if (r.effect.depopStart) dirty.depop = true;
   afterPurchase(); return true;
 }
-function afterPurchase() { dirty.shop = true; dirty.journey = true; checkEra(); checkAchievements(); saveSoon(); }
+function afterPurchase() { syncUpgSet(); frameId++; dirty.shop = true; dirty.journey = true; checkEra(); checkAchievements(); saveSoon(); }
 
 /* ---------- buffs ---------- */
 function addBuff(id, kind, mult, seconds, name) {
@@ -345,6 +352,7 @@ function loop() {
   while (acc >= stepMs && guard++ < 100000) { step(stepMs); acc -= stepMs; }
 }
 function step(ms) {
+  frameId++;
   const rate = cps();
   earn(rate * ms / 1000, true);
   S.stats.playMs += ms;
@@ -444,7 +452,7 @@ function clickGolden() {
   if (S.golden.clicked === 1) journalAdd('golden_first');
   toast({ kicker: 'Golden taco', title: eff.name, text, icon: 'star', cls: 'gold' });
   chime(1320); chime(1760, 0.12);
-  updateTitle(true); dirty.journey = true; checkAchievements(); saveSoon();
+  frameId++; updateTitle(true); dirty.journey = true; checkAchievements(); saveSoon();
 }
 
 /* ---------- taco storm ---------- */
@@ -537,7 +545,7 @@ function checkEra() {
   save(false);
 }
 function queueStory(n) { if (S.seenStory.includes(n)) return; storyQueue.push(n); pumpStories(); }
-function pumpStories() { if (modalOpen() || !storyQueue.length) return; const n = storyQueue.shift(); S.seenStory.push(n); openStory(n); }
+function pumpStories() { if (modalOpen() || !storyQueue.length) return; const n = storyQueue.shift(); S.seenStory.push(n); saveSoon(); openStory(n); }
 function journalAdd(id) { if (S.journal.some((j) => j.id === id)) return; S.journal.push({ id, t: now() }); dirty.journal = true; }
 function journalText(id) {
   let m;
@@ -1185,6 +1193,7 @@ function setBuyAmount(amount) { buyAmount = amount; document.querySelectorAll('#
 function setSellMode(on) { sellMode = on; const b = document.querySelector('#buySeg [data-mode="sell"]'); b.classList.toggle('on', on); b.classList.toggle('sell', on); refreshTip(); }
 function render() {
   if (!S) return;
+  frameId++;
   const cashText = money(S.bank); const cashEl = $('cash'); setText(cashEl, cashText);
   setClass(cashEl, 'small', cashText.length > 13 && cashText.length <= 18); setClass(cashEl, 'tiny', cashText.length > 18);
   const rate = cps(); setText($('cps'), money(rate, { decimals: rate < 10 ? 1 : undefined }));
@@ -1199,6 +1208,7 @@ function render() {
   if (!S.tut.bought && S.bank >= unitCost('press')) setText($('hintText'), isMobileLayout() ? 'You can afford a Tortilla Press. Open the Shop tab.' : 'You can afford a Tortilla Press. Buy helpers to earn while you rest.');
 }
 function rebuildAll() {
+  syncUpgSet(); frameId++;
   document.body.dataset.era = String(S.era); document.body.classList.toggle('no-particles', !S.opts.particles);
   tileOrder = ''; depopBuilt = ''; sceneEra = 0;
   Object.keys(buffEls).forEach((k) => { buffEls[k].remove(); delete buffEls[k]; });
