@@ -1043,7 +1043,7 @@ const DATA = {
    "id": "palate",
    "name": "Golden Palate",
    "cost": 2,
-   "desc": "Golden tacos appear 20% more often.",
+   "desc": "Golden tacos appear 25% more often.",
    "effect": {
     "goldenFreq": 1.25
    },
@@ -1150,7 +1150,7 @@ const DATA = {
   {
    "id": "cash_1e6",
    "name": "Actual Millionaire",
-   "desc": "Earn $1 million lifetime. Manuel is 12 and does not know what taxes are.",
+   "desc": "Earn $1 million lifetime. Manuel still does not know what taxes are.",
    "icon": "coin",
    "secret": false,
    "kind": "lifetime",
@@ -1424,30 +1424,33 @@ const DATA = {
    "v": 100
   },
   {
-   "id": "salsa_1",
+   "id": "salsabar_1",
    "name": "One Is a Dare",
    "desc": "Own 1 Salsa Bar. Five salsas. Diego tried the dare one. Diego is fine.",
-   "icon": "chef",
+   "icon": "salsa",
    "secret": false,
-   "kind": "salsa",
+   "kind": "owned",
+   "producer": "salsa",
    "v": 1
   },
   {
-   "id": "salsa_50",
+   "id": "salsabar_50",
    "name": "Salsa Rainbow",
    "desc": "Own 50 Salsa Bars. That's 250 salsas and 50 dares.",
-   "icon": "chef",
+   "icon": "salsa",
    "secret": false,
-   "kind": "salsa",
+   "kind": "owned",
+   "producer": "salsa",
    "v": 50
   },
   {
-   "id": "salsa_100",
+   "id": "salsabar_100",
    "name": "Hot Sauce Headquarters",
    "desc": "Own 100 Salsa Bars. The fire department stops by. To eat.",
-   "icon": "chef",
+   "icon": "salsa",
    "secret": false,
-   "kind": "salsa",
+   "kind": "owned",
+   "producer": "salsa",
    "v": 100
   },
   {
@@ -1807,7 +1810,7 @@ const DATA = {
   {
    "id": "era_5",
    "name": "Went Viral",
-   "desc": "Reach the Depop Drip era. One video. Four million views. Zero sleep.",
+   "desc": "Reach the Depop Drip era. One video. Ten million views. Zero sleep.",
    "icon": "tag",
    "secret": false,
    "kind": "era",
@@ -1832,7 +1835,7 @@ const DATA = {
    "v": 1
   },
   {
-   "id": "salsa_10",
+   "id": "salsapts_10",
    "name": "Ten Point Salsa",
    "desc": "Earn 10 Salsa Points total. Permanent flavor. Permanent income.",
    "icon": "chef",
@@ -1841,7 +1844,7 @@ const DATA = {
    "v": 10
   },
   {
-   "id": "salsa_100",
+   "id": "salsapts_100",
    "name": "Century of Salsa",
    "desc": "Earn 100 Salsa Points total. The secret recipe is basically you now.",
    "icon": "chef",
@@ -1915,19 +1918,13 @@ const DATA = {
  ],
  "news": {
   "generic": [
-   "Local boy, 12, insists the secret ingredient is 'love.' Abuela says it is actually lime.",
    "Abuela has approved exactly one change to the recipe since 1974. Nobody knows what it was.",
    "Cousin Diego claims he can eat eleven tacos in one sitting. Sources confirm he stopped at nine.",
-   "Neighbors report a 'suspiciously good smell' coming from the backyard again.",
-   "Manuel's math homework found covered in salsa. Teacher gives partial credit.",
-   "The folding table has a wobbly leg. Abuela says it builds character.",
    "Mrs. Ortega from next door has ordered 'the usual.' Nobody has told her what the usual is.",
    "Manuel practiced his tortilla flip for two hours. Ceiling is fine. Mostly.",
    "Diego was put in charge of napkins. Napkins are now somehow missing.",
    "Abuela's radio plays the same station every day. Customers have started to sing along.",
    "A dog named Chorizo has appointed himself head of security. He accepts payment in crumbs.",
-   "Manuel's mom says he can keep selling tacos 'as long as the grades stay up.' The grades are up.",
-   "Reports of a kid on a bike delivering tacos to the fire station. Firefighters give it five stars.",
    "Abuela says the tortillas taste better if you talk nicely to them. Manuel talks nicely to them.",
    "The cilantro debate has divided the block. Manuel refuses to take a side.",
    "Diego suggested a taco with pineapple. The motion was tabled. The pineapple was eaten.",
@@ -1935,7 +1932,6 @@ const DATA = {
    "Weather report: sunny with a chance of salsa verde.",
    "Someone left a thank-you note under the tip jar. Manuel taped it to the wall.",
    "Abuela says she is 'just supervising.' She has been supervising for six hours.",
-   "Local kids have started a rumor that Manuel's tacos help you pass tests. Sales up on Thursdays.",
    "Manuel was seen practicing his 'thank you, come again' in the mirror.",
    "The mailman now takes his lunch break at the exact time the first batch comes out.",
    "Diego wrote a jingle. It only has four words. It is stuck in everyone's head.",
@@ -1957,7 +1953,14 @@ const DATA = {
    "Manuel's first customer was Abuela. She paid full price and left a tip.",
    "Neighbors have started bringing their own plates to the backyard. Manuel is thrilled.",
    "The backyard hose is now the official hand-washing station.",
-   "Manuel hung a paper sign on the fence. It says TACOS in three colors of marker."
+   "Manuel hung a paper sign on the fence. It says TACOS in three colors of marker.",
+   "Local boy, 12, insists the secret ingredient is 'love.' Abuela says it is actually lime.",
+   "Neighbors report a 'suspiciously good smell' coming from the backyard again.",
+   "Manuel's math homework found covered in salsa. Teacher gives partial credit.",
+   "The folding table has a wobbly leg. Abuela says it builds character.",
+   "Manuel's mom says he can keep selling tacos 'as long as the grades stay up.' The grades are up.",
+   "Reports of a kid on a bike delivering tacos to the fire station. Firefighters give it five stars.",
+   "Local kids have started a rumor that Manuel's tacos help you pass tests. Sales up on Thursdays."
   ],
   "era2": [
    "A brand-new stand opened on 5th and Main. The kid running it looks about twelve.",
@@ -2072,7 +2075,7 @@ const DATA = {
  "ui": {
   "offlineToast": "While you were away, the stand kept running for {time} and earned {amount}. Abuela was supervising.",
   "prestigeConfirm": "Franchise Out? Manuel hands over the keys and starts again from the backyard with {salsa} Salsa Points. Cash, producers, upgrades and eras reset. Achievements, salsa and recipes stay.",
-  "prestigeLocked": "Not yet. Manuel needs to earn a lot more before anyone wants to buy the recipe. Come back at $1 billion lifetime.",
+  "prestigeLocked": "Not yet. Manuel needs to earn a lot more before anyone wants to buy the recipe.",
   "depopLockedTeaser": "Something is going to happen with that crooked sign. Keep growing and you will find out.",
   "hardResetConfirm": "Hard reset erases EVERYTHING: cash, producers, achievements, salsa points, recipes, all of it. Manuel goes back to being twelve with a wobbly table. Are you sure?",
   "firstVisitWelcome": "Manuel is twelve, he has Abuela's tortilla recipe, and he just set up a folding table in the backyard. Click the taco to sell one and see how far this goes.",

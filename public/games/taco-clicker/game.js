@@ -58,9 +58,10 @@ function fmt(n, opts = {}) {
   if (Math.round(n) < 1e6) return sign + Math.round(n).toLocaleString('en-US');
   let exp = Math.floor(Math.log10(n) / 3);
   let mant = n / Math.pow(10, exp * 3);
-  if (Number(mant.toFixed(3)) >= 1000) { exp += 1; mant = n / Math.pow(10, exp * 3); }
+  const digitsFor = (m) => (short ? (m >= 99.95 ? 0 : m >= 9.995 ? 1 : 2) : 3);
+  let digits = digitsFor(mant);
+  if (Number(mant.toFixed(digits)) >= 1000) { exp += 1; mant = n / Math.pow(10, exp * 3); digits = digitsFor(mant); }
   if (exp >= SUFFIX_LONG.length) return sign + n.toExponential(2).replace('e+', 'e');
-  const digits = short ? (mant >= 100 ? 0 : mant >= 10 ? 1 : 2) : 3;
   return sign + mant.toFixed(digits) + (short ? SUFFIX_SHORT[exp] : SUFFIX_LONG[exp]);
 }
 const money = (n, opts) => (n < 0 ? '-$' + fmt(-n, opts) : '$' + fmt(n, opts));
@@ -92,11 +93,12 @@ const OPEN_TIERS = 14; // tiers 7..20 are generated: open-ended late-game sink
 const UPG = [];
 const UPGID = {};
 function addUpgrade(u) { UPG.push(u); UPGID[u.id] = u; }
+function plural(n) { if (/ss$/.test(n)) return n + 'es'; if (/[^aeiou]y$/.test(n)) return n.slice(0, -1) + 'ies'; return n.endsWith('s') ? n : n + 's'; }
 P.forEach((p) => {
-  p.tiers.forEach((t, i) => addUpgrade({ id: p.id + '_t' + (i + 1), name: t.name, flavor: t.flavor, cost: p.cost * DATA.tierCostMult[i], icon: p.icon, kind: 'tier', producer: p.id, tier: i + 1, threshold: TIER_THR[i], desc: p.name + (p.name.endsWith('s') ? '' : 's') + ' are twice as efficient.' }));
+  p.tiers.forEach((t, i) => addUpgrade({ id: p.id + '_t' + (i + 1), name: t.name, flavor: t.flavor, cost: p.cost * DATA.tierCostMult[i], icon: p.icon, kind: 'tier', producer: p.id, tier: i + 1, threshold: TIER_THR[i], desc: plural(p.name) + ' are twice as efficient.' }));
   for (let k = 7; k <= 6 + OPEN_TIERS; k++) {
     const thr = 150 + 50 * (k - 7);
-    addUpgrade({ id: p.id + '_t' + k, name: p.name + ' Level ' + k, flavor: 'Manuel has stopped asking how. Abuela never asked.', cost: p.cost * DATA.tierCostMult[5] * Math.pow(10, k - 6), icon: p.icon, kind: 'tier', producer: p.id, tier: k, threshold: thr, desc: p.name + (p.name.endsWith('s') ? '' : 's') + ' are twice as efficient.' });
+    addUpgrade({ id: p.id + '_t' + k, name: p.name + ' Level ' + k, flavor: 'Manuel has stopped asking how. Abuela never asked.', cost: p.cost * DATA.tierCostMult[5] * Math.pow(10, k - 6), icon: p.icon, kind: 'tier', producer: p.id, tier: k, threshold: thr, desc: plural(p.name) + ' are twice as efficient.' });
   }
 });
 DATA.upgrades.forEach((u) => addUpgrade(Object.assign({}, u)));
@@ -141,12 +143,16 @@ function sanitize(raw) {
   s.bank = sane(raw.bank); s.lifetime = sane(raw.lifetime); s.lifetimeAll = Math.max(sane(raw.lifetimeAll), s.lifetime);
   s.producerCash = sane(raw.producerCash); s.clicks = saneInt(raw.clicks, 0, 1e15); s.clicksRun = saneInt(raw.clicksRun, 0, 1e15);
   if (raw.producers && typeof raw.producers === 'object') P.forEach((p) => { s.producers[p.id] = saneInt(raw.producers[p.id], 0, C.MAX_OWNED); });
-  if (Array.isArray(raw.upgrades)) s.upgrades = raw.upgrades.filter((id) => typeof id === 'string' && UPGID[id]);
+  if (Array.isArray(raw.upgrades)) s.upgrades = [...new Set(raw.upgrades.filter((id) => typeof id === 'string' && UPGID[id]))];
   s.menuItems = saneInt(raw.menuItems, 0, 1000);
   if (Array.isArray(raw.buffs)) s.buffs = raw.buffs.filter((b) => b && typeof b === 'object' && typeof b.id === 'string' && isNum(b.endsAt) && b.endsAt > t && isNum(b.mult)).map((b) => ({ id: String(b.id).slice(0, 32), kind: ['income', 'click', 'storm'].includes(b.kind) ? b.kind : 'income', mult: sane(b.mult, 1, 1e6, 1), endsAt: Math.min(b.endsAt, t + 3600 * 1000), name: typeof b.name === 'string' ? b.name.slice(0, 40) : b.id }));
   if (raw.golden && typeof raw.golden === 'object') {
     s.golden.nextAt = sane(raw.golden.nextAt, 0, t + 3600 * 1000, s.golden.nextAt);
     s.golden.clicked = saneInt(raw.golden.clicked, 0, 1e9); s.golden.missed = saneInt(raw.golden.missed, 0, 1e9); s.golden.streak = saneInt(raw.golden.streak, 0, 1e6);
+    const ra = raw.golden.active;
+    if (ra && typeof ra === 'object' && GOLDEN.some((g) => g.id === ra.effect) && isNum(ra.expiresAt) && ra.expiresAt > t) {
+      s.golden.active = { effect: ra.effect, spawnedAt: sane(ra.spawnedAt, 0, t, t), expiresAt: Math.min(ra.expiresAt, t + C.GOLDEN_STAY_S * 4 * 1000), x: sane(ra.x, 0.05, 0.95, 0.5), y: sane(ra.y, 0.05, 0.95, 0.5) };
+    } else if (ra || s.golden.nextAt < t) s.golden.nextAt = t + randInt(30, 90) * 1000;
   }
   if (raw.depop && typeof raw.depop === 'object') {
     const d = raw.depop;
@@ -162,11 +168,11 @@ function sanitize(raw) {
   s.era = saneInt(raw.era, 1, ERAS.length, 1);
   if (Array.isArray(raw.seenStory)) s.seenStory = raw.seenStory.filter((n) => Number.isInteger(n) && n >= 1 && n <= ERAS.length);
   if (Array.isArray(raw.journal)) s.journal = raw.journal.filter((j) => j && typeof j.id === 'string' && isNum(j.t)).slice(-200).map((j) => ({ id: j.id.slice(0, 40), t: j.t }));
-  if (Array.isArray(raw.firstBuys)) s.firstBuys = raw.firstBuys.filter((id) => PID[id]);
+  if (Array.isArray(raw.firstBuys)) s.firstBuys = [...new Set(raw.firstBuys.filter((id) => PID[id]))];
   s.salsa = saneInt(raw.salsa, 0, 1e9); s.salsaSpent = saneInt(raw.salsaSpent, 0, s.salsa);
-  if (Array.isArray(raw.recipes)) s.recipes = raw.recipes.filter((id) => RID[id]);
+  if (Array.isArray(raw.recipes)) s.recipes = [...new Set(raw.recipes.filter((id) => RID[id]))];
   s.runs = saneInt(raw.runs, 1, 1e6, 1); s.prestiges = saneInt(raw.prestiges, 0, 1e6);
-  if (Array.isArray(raw.ach)) s.ach = raw.ach.filter((id) => ACHID[id]);
+  if (Array.isArray(raw.ach)) s.ach = [...new Set(raw.ach.filter((id) => ACHID[id]))];
   if (raw.stats && typeof raw.stats === 'object') Object.keys(s.stats).forEach((k) => { s.stats[k] = sane(raw.stats[k], 0, 1e300); });
   if (raw.opts && typeof raw.opts === 'object') Object.keys(s.opts).forEach((k) => { if (typeof raw.opts[k] === 'boolean') s.opts[k] = raw.opts[k]; });
   if (raw.tut && typeof raw.tut === 'object') { s.tut.clicks = saneInt(raw.tut.clicks, 0, 1000); s.tut.bought = !!raw.tut.bought; }
@@ -200,6 +206,7 @@ function importSave(str) {
   try { obj = JSON.parse(b64decode(String(str).trim())); } catch (e) { try { obj = JSON.parse(String(str).trim()); } catch (e2) { return false; } }
   if (!obj || typeof obj !== 'object' || !obj.producers) return false;
   S = sanitize(obj);
+  storyQueue.length = 0; endStorm(); removeGoldenEl();
   applyOffline(true);
   rebuildAll();
   save(false);
@@ -226,7 +233,7 @@ function incomeLayers(withBuffs = true) {
   const eraMult = 1 + DATA.eraBonus * (S.era - 1); if (eraMult !== 1) L.push({ label: 'Chapter ' + S.era + ': ' + ERAS[S.era - 1].name, mult: eraMult });
   for (const u of UPG) if (u.kind === 'global' && has(u.id)) L.push({ label: u.name, mult: 1 + u.effect.globalMult });
   const repK = UPG.filter((u) => u.kind === 'rep' && has(u.id)).reduce((a, u) => a + u.effect.repMult, 0);
-  if (repK > 0) L.push({ label: 'Reputation ' + Math.round(reputation() * 100) + '% (' + S.ach.length + ' achievements)', mult: 1 + reputation() * repK });
+  if (repK > 0) L.push({ label: 'Reputation ' + Math.round(reputation() * 100) + '% (' + S.ach.length + ' achievements)', mult: 1 + (reputation() / 0.1) * repK });
   if (S.salsa > 0) L.push({ label: 'Salsa Points (' + S.salsa + ')', mult: 1 + 0.05 * S.salsa });
   for (const r of RECIPES) if (hasRecipe(r.id) && r.effect.globalMult) L.push({ label: r.name, mult: 1 + r.effect.globalMult });
   if (S.menuItems > 0) L.push({ label: 'New Menu Items (' + S.menuItems + ')', mult: Math.pow(1 + DATA.menuItem.bonus, S.menuItems) });
@@ -269,7 +276,7 @@ function maxAffordable(pid, cash = S.bank) {
 function sellRefund(pid, k) { const owned = S.producers[pid]; k = Math.min(k, owned); if (k <= 0) return 0; return Math.floor(bulkCost(pid, k, owned - k) * DATA.sellRefund); }
 function menuItemCost() { return DATA.menuItem.baseCost * Math.pow(DATA.menuItem.costMult, S.menuItems); }
 
-function producerVisible(p) { return S.producers[p.id] > 0 || (S.era >= p.era - 1 && S.lifetime >= p.cost * 0.4); }
+function producerVisible(p) { return S.producers[p.id] > 0 || (S.era >= p.era - 1 && Math.max(S.lifetime, S.bank) >= p.cost * 0.4); }
 function upgradeUnlocked(u) {
   if (u.kind === 'tier') return S.producers[u.producer] >= u.threshold;
   if (u.kind === 'synergy') return S.producers[u.a] >= 15 && S.producers[u.b] >= 15;
@@ -337,7 +344,8 @@ function addBuff(id, kind, mult, seconds, name) {
   if (ex) ex.endsAt = Math.max(ex.endsAt, endsAt); else S.buffs.push({ id, kind, mult, endsAt, name });
   dirty.journey = true;
 }
-function pruneBuffs() { const t = now(); const n = S.buffs.length; S.buffs = S.buffs.filter((b) => b.endsAt > t); if (S.buffs.length !== n) { dirty.journey = true; if (!S.buffs.some((b) => b.kind === 'storm')) endStorm(); } }
+function pruneBuffs() { const t = now(); const n = S.buffs.length; S.buffs = S.buffs.filter((b) => b.endsAt > t); if (S.buffs.length !== n) dirty.journey = true; syncStorm(); }
+function syncStorm() { const live = S.buffs.some((b) => b.kind === 'storm' && b.endsAt > now()); if (live && !stormOn) startStorm(); else if (!live && stormOn) endStorm(); }
 
 /* ---------- simulation ---------- */
 let lastTick = 0, acc = 0, secondAcc = 0;
@@ -345,7 +353,13 @@ function loop() {
   if (!S) return;
   const t = now(); let dt = t - lastTick; lastTick = t;
   if (dt <= 0) return;
-  if (dt > C.MAX_STEP_MS) { applyOffline(false, dt); return; }
+  if (dt > C.MAX_STEP_MS) {
+    acc = 0;
+    for (let i = 0; i < C.MAX_STEP_MS / 1000; i++) step(1000);
+    const rest = dt - C.MAX_STEP_MS;
+    if (rest >= C.OFFLINE_MIN_MS) applyOffline(false, rest); else lastTick = now();
+    return;
+  }
   acc += dt;
   const stepMs = dt > 2000 ? 1000 : C.LOGIC_MS;
   let guard = 0;
@@ -371,7 +385,7 @@ function applyOffline(fromLoad, dtOverride) {
   const { rate, capMs } = offlineSettings();
   const elapsed = clamp(elapsedRaw, 0, capMs);
   lastTick = t; acc = 0;
-  S.buffs = S.buffs.filter((b) => b.endsAt > t);
+  S.buffs = S.buffs.filter((b) => b.endsAt > t); syncStorm();
   if (elapsed < C.OFFLINE_MIN_MS) return;
   const income = cps(false) * rate * elapsed / 1000;
   earn(income, true); S.stats.offlineEarned += income;
@@ -514,6 +528,7 @@ function depopTick(ms) {
 /* ---------- prestige: a new summer ---------- */
 function newSummer() {
   const gain = pendingSalsa(); if (gain < 1) return false;
+  storyQueue.length = 0; if (modalOpen()) closeModal();
   const keep = {
     created: S.created, lifetimeAll: S.lifetimeAll, clicks: S.clicks, salsa: S.salsa + gain, salsaSpent: S.salsaSpent, recipes: S.recipes.slice(),
     runs: S.runs + 1, prestiges: S.prestiges + 1, ach: S.ach.slice(), stats: Object.assign({}, S.stats), opts: Object.assign({}, S.opts),
@@ -529,7 +544,7 @@ function newSummer() {
   checkAchievements();
   return true;
 }
-function hardReset() { S = freshState(); endStorm(); removeGoldenEl(); save(false); rebuildAll(); queueStory(1); }
+function hardReset() { storyQueue.length = 0; if (modalOpen()) closeModal(); S = freshState(); endStorm(); removeGoldenEl(); save(false); rebuildAll(); queueStory(1); }
 
 /* ---------- eras, journal, achievements ---------- */
 const storyQueue = [];
@@ -540,12 +555,13 @@ function checkEra() {
   document.body.dataset.era = String(e);
   for (let n = from + 1; n <= e; n++) { journalAdd('era_' + n); queueStory(n); }
   dirty.scene = dirty.shop = dirty.journey = dirty.depop = true;
-  toast({ kicker: 'Chapter ' + e, title: ERAS[e - 1].name, text: 'All income +' + Math.round(DATA.eraBonus * 100) + '% from now on.', icon: ERAS[e - 1].icon, cls: 'gold' });
+  const gainPct = Math.round(((1 + DATA.eraBonus * (e - 1)) / (1 + DATA.eraBonus * (from - 1)) - 1) * 100);
+  toast({ kicker: 'Chapter ' + e, title: ERAS[e - 1].name, text: 'All income +' + gainPct + '% from now on.', icon: ERAS[e - 1].icon, cls: 'gold' });
   chime(660); chime(880, 0.15); chime(1320, 0.3);
   save(false);
 }
 function queueStory(n) { if (S.seenStory.includes(n)) return; storyQueue.push(n); pumpStories(); }
-function pumpStories() { if (modalOpen() || !storyQueue.length) return; const n = storyQueue.shift(); S.seenStory.push(n); saveSoon(); openStory(n); }
+function pumpStories() { if (modalOpen()) return; while (storyQueue.length) { const n = storyQueue.shift(); if (S.seenStory.includes(n) || n > S.era) continue; S.seenStory.push(n); saveSoon(); openStory(n); return; } }
 function journalAdd(id) { if (S.journal.some((j) => j.id === id)) return; S.journal.push({ id, t: now() }); dirty.journal = true; }
 function journalText(id) {
   let m;
@@ -650,9 +666,10 @@ function pumpToasts() {
   if (o.title) body.appendChild(el('div', 'toast-title', o.title));
   if (o.text) body.appendChild(el('div', 'toast-text', o.text));
   t.appendChild(ic); t.appendChild(body); $('toasts').appendChild(t);
-  const done = () => { if (!t.isConnected) return; t.classList.add('out'); setTimeout(() => { t.remove(); toastsShowing--; pumpToasts(); }, 300); };
+  let closing = false, timer = 0;
+  const done = () => { if (closing || !t.isConnected) return; closing = true; clearTimeout(timer); t.classList.add('out'); setTimeout(() => { t.remove(); toastsShowing--; pumpToasts(); }, 300); };
   t.addEventListener('click', done);
-  setTimeout(done, o.ms || C.TOAST_MS);
+  timer = setTimeout(done, o.ms || C.TOAST_MS);
 }
 
 /* ---------- title ---------- */
@@ -937,9 +954,9 @@ function rotateNews() {
 }
 
 /* ---------- modals ---------- */
-let modalOpener = null, modalOnClose = null;
+let modalOpener = null, modalOnClose = null, lastInputKeyboard = false;
 function openModal(o) {
-  const root = $('modalRoot'); root.innerHTML = ''; modalOpener = document.activeElement; modalOnClose = o.onClose || null;
+  const root = $('modalRoot'); root.innerHTML = ''; modalOpener = lastInputKeyboard ? document.activeElement : null; modalOnClose = o.onClose || null;
   const m = el('div', 'modal' + (o.cls ? ' ' + o.cls : '')); m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
   const head = el('div', 'modal-head');
   if (o.kicker) { const k = el('div', 'modal-kicker'); if (o.kickerIcon) k.appendChild(svgIcon(o.kickerIcon)); k.appendChild(el('span', null, o.kicker)); head.appendChild(k); } else head.appendChild(el('div'));
@@ -966,7 +983,7 @@ function openStory(n) {
   const art = el('div', 'story-art'); art.appendChild(svgIcon(e.icon)); body.appendChild(art);
   body.appendChild(el('p', null, e.text));
   const foot = el('div', 'modal-foot'); const note = el('div', 'note');
-  if (n > 1) { note.appendChild(el('span', null, 'All income ')); note.appendChild(el('b', null, '+' + Math.round(DATA.eraBonus * 100) + '%')); note.appendChild(el('span', null, ' from now on')); }
+  if (n > 1) { const gainPct = Math.round(DATA.eraBonus / (1 + DATA.eraBonus * (n - 2)) * 100); note.appendChild(el('span', null, 'All income ')); note.appendChild(el('b', null, '+' + gainPct + '%')); note.appendChild(el('span', null, ' from now on (chapter bonus now ×' + (1 + DATA.eraBonus * (n - 1)).toFixed(2) + ')')); }
   else note.textContent = DATA.ui.tacoButtonHint;
   const btn = el('button', 'btn btn-primary', n === 1 ? 'Start selling' : 'Keep cooking'); btn.type = 'button'; btn.addEventListener('click', closeModal);
   foot.appendChild(note); foot.appendChild(btn);
@@ -1123,7 +1140,7 @@ const sceneParts = {
   phone(x, y) { return `<g transform="translate(${x} ${y})"><rect x="0" y="0" width="56" height="100" rx="10" fill="#1a1315" stroke="${OUT}" stroke-width="3"/><rect x="6" y="10" width="44" height="72" rx="4" fill="#2a1b33"/><path d="M28 34 c-8 -14 -22 -4 -12 8 l12 12 l12 -12 c10 -12 -4 -22 -12 -8 z" fill="#d96bff"/><path d="M18 62 h20 M14 70 h28" stroke="#8f7a6c" stroke-width="3" stroke-linecap="round"/><g fill="#d96bff" opacity=".8"><path d="M70 -6 c-6 -10 -16 -3 -9 6 l9 9 l9 -9 c7 -9 -3 -16 -9 -6 z"/><path d="M84 -40 c-5 -8 -13 -2 -7 5 l7 7 l7 -7 c6 -7 -2 -13 -7 -5 z" opacity=".6"/><path d="M62 -70 c-4 -6 -10 -2 -6 4 l6 6 l6 -6 c4 -6 -2 -10 -6 -4 z" opacity=".4"/></g></g>`; },
   neon(x, y) { return `<g transform="translate(${x} ${y})"><rect x="-96" y="-26" width="192" height="52" rx="12" fill="#17121c" stroke="#d96bff" stroke-width="3"/><rect x="-96" y="-26" width="192" height="52" rx="12" fill="#d96bff" opacity=".12"/>${sceneParts.sign(0, 10, 28, '#d96bff', -2)}</g>`; },
   storefront(x, y, s = 1, color = '#8c2f5a') { return `<g transform="translate(${x} ${y}) scale(${s})"><rect x="0" y="0" width="150" height="130" rx="8" fill="#2b201d" stroke="${OUT}" stroke-width="3"/><rect x="0" y="0" width="150" height="34" rx="8" fill="${color}" stroke="${OUT}" stroke-width="3"/>${sceneParts.sign(75, 25, 20, '#ffb52e', -2)}<rect x="16" y="54" width="52" height="56" rx="4" fill="#ffb52e" opacity=".35" stroke="${OUT}" stroke-width="3"/><rect x="88" y="54" width="46" height="76" rx="4" fill="#3a2a2c" stroke="${OUT}" stroke-width="3"/><circle cx="124" cy="94" r="3" fill="#ffb52e"/><path d="M-8 130 h166" stroke="${OUT}" stroke-width="4"/></g>`; },
-  planet(x, y) { return `<g transform="translate(${x} ${y})"><circle r="26" fill="#4a3a2a" stroke="${OUT}" stroke-width="3"/><circle cx="-8" cy="-6" r="6" fill="#3a2a2c"/><circle cx="10" cy="8" r="4" fill="#3a2a2c"/><ellipse rx="44" ry="10" fill="none" stroke="#ffb52e" stroke-width="3" transform="rotate(-18)"/><g transform="translate(34 -22) scale(.16)"><use href="#taco"/></g></g>`; },
+  planet(x, y) { return `<g transform="translate(${x} ${y})"><circle r="26" fill="#4a3a2a" stroke="${OUT}" stroke-width="3"/><circle cx="-8" cy="-6" r="6" fill="#3a2a2c"/><circle cx="10" cy="8" r="4" fill="#3a2a2c"/><ellipse rx="44" ry="10" fill="none" stroke="#ffb52e" stroke-width="3" transform="rotate(-18)"/><g transform="translate(34 -22) scale(.16)"><use href="#taco" width="240" height="200"/></g></g>`; },
   chair(x, y) { return `<g transform="translate(${x} ${y})" stroke="${OUT}" stroke-width="4" fill="none" stroke-linecap="round"><path d="M0 0 v-40 h40 v40"/><path d="M0 -40 v-46 h40 v46"/><path d="M-4 -40 h48" stroke="#ff5a3c" stroke-width="8"/></g>`; },
   abuela(x, y, s = 1) {
     return `<g class="abuela" transform="translate(${x} ${y}) scale(${s})" role="button" tabindex="0" aria-label="Abuela. Click to hear what she thinks." data-abuela="1">
@@ -1142,12 +1159,12 @@ const sceneParts = {
   },
 };
 const SCENES = {
-  1: () => sceneParts.stars() + sceneParts.lights(50) + sceneParts.fence(120) + sceneParts.plant(380, 300) + sceneParts.table(60, 232) + sceneParts.abuela(330, 330, 1),
+  1: () => sceneParts.stars() + sceneParts.lights(50) + sceneParts.fence(120) + sceneParts.plant(28, 300) + sceneParts.table(60, 232) + sceneParts.abuela(372, 330, 1),
   2: () => sceneParts.stars() + sceneParts.lights(40) + sceneParts.lamp(392, 320) + sceneParts.stand(60, 100) + sceneParts.chair(300, 300) + sceneParts.abuela(350, 330, 1),
   3: () => sceneParts.stars() + sceneParts.lights(46) + sceneParts.truck(20, 90, 1, true) + sceneParts.abuela(360, 330, 1),
   4: () => sceneParts.stars() + sceneParts.skyline(160) + sceneParts.truck(30, 120, 0.62, true) + sceneParts.truck(210, 150, 0.62, true) + sceneParts.truck(120, 178, 0.62, false) + sceneParts.abuela(362, 330, 1),
   5: () => sceneParts.stars() + sceneParts.neon(150, 50) + sceneParts.truck(4, 128, 0.6, true) + sceneParts.rack(300, 150) + sceneParts.phone(236, 214) + sceneParts.abuela(370, 330, 1),
-  6: () => sceneParts.stars() + sceneParts.planet(360, 60) + sceneParts.storefront(10, 110, 0.8, '#8c2f5a') + sceneParts.storefront(140, 100, 0.8, '#b5532a') + sceneParts.storefront(270, 118, 0.8, '#4f7d2a') + sceneParts.abuela(350, 336, 1),
+  6: () => sceneParts.stars() + sceneParts.planet(330, 64) + sceneParts.storefront(10, 110, 0.8, '#8c2f5a') + sceneParts.storefront(140, 100, 0.8, '#b5532a') + sceneParts.storefront(270, 118, 0.8, '#4f7d2a') + sceneParts.abuela(350, 336, 1),
 };
 let sceneEra = 0;
 function renderScene() {
@@ -1209,6 +1226,7 @@ function render() {
 }
 function rebuildAll() {
   syncUpgSet(); frameId++;
+  syncStorm(); renderGolden();
   document.body.dataset.era = String(S.era); document.body.classList.toggle('no-particles', !S.opts.particles);
   tileOrder = ''; depopBuilt = ''; sceneEra = 0;
   Object.keys(buffEls).forEach((k) => { buffEls[k].remove(); delete buffEls[k]; });
@@ -1228,6 +1246,9 @@ function wireInput() {
   document.querySelector('#buySeg [data-mode="sell"]').addEventListener('click', () => setSellMode(!sellMode));
   document.querySelectorAll('.tabbar button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
   window.addEventListener('resize', () => { positionTip(); });
+  document.addEventListener('mousedown', (e) => { lastInputKeyboard = false; const b = e.target.closest && e.target.closest('.topnav .btn, #menuBtn, .producer, .tile, #buySeg button, .tabbar button, .item-chip'); if (b) e.preventDefault(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Tab') lastInputKeyboard = true; }, true);
+  document.addEventListener('pointerdown', () => { lastInputKeyboard = false; }, true);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(false); });
   window.addEventListener('pagehide', () => save(false));
   window.addEventListener('beforeunload', () => save(false));
@@ -1249,10 +1270,10 @@ function boot() {
   const testMode = /[?&]test=1/.test(location.search) || storeGet(C.TEST_KEY) === '1';
   if (testMode) {
     window.__mtc = {
-      C, DATA, getState: () => S, setState: (patch) => { S = sanitize(Object.assign({}, JSON.parse(JSON.stringify(S)), patch)); rebuildAll(); return S; },
+      C, DATA, getState: () => S, setState: (patch) => { S = sanitize(Object.assign({}, JSON.parse(JSON.stringify(S)), patch)); storyQueue.length = 0; endStorm(); removeGoldenEl(); rebuildAll(); return S; },
       tick: (ms) => { clockOffset += ms; loop(); render(); }, now, setClock: (ms) => { clockOffset = ms; }, spawnGolden: (id) => { spawnGolden(id); return S.golden.active; }, clickGolden,
       fmt, money, cps, clickValue, unitCost, bulkCost, maxAffordable, sellRefund, buyProducer, sellProducer, buyUpgrade, buyRecipe, buyMenuItem, listDrop, collectDrop, newSummer, hardReset, sellTaco: () => sellTaco(null),
-      save: () => save(false), load: () => { S = load() || freshState(); rebuildAll(); return S; }, exportSave, importSave, checkAchievements, checkEra, render, applyOffline, incomeLayers, tacosSold, pendingSalsa, closeModal, openPanel, upgrades: UPG, visibleUpgrades, producerVisible, itemCost: (id) => itemCost(ITEMID[id]), sanitize, freshState: () => freshState(),
+      save: () => save(false), load: () => { S = load() || freshState(); storyQueue.length = 0; endStorm(); removeGoldenEl(); rebuildAll(); return S; }, exportSave, importSave, checkAchievements, checkEra, render, applyOffline, incomeLayers, tacosSold, pendingSalsa, closeModal, openPanel, upgrades: UPG, visibleUpgrades, producerVisible, itemCost: (id) => itemCost(ITEMID[id]), sanitize, freshState: () => freshState(),
     };
   }
 }
