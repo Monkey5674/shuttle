@@ -19,7 +19,7 @@ You are welcome to submit pull requests aimed at enhancing shuttle.
 
 ## Games
 
-- **Manuel's Taco Clicker** — a cookie-clicker style idle game that ships with Shuttle. Open it from the Games page or go to `/games/taco-clicker/`. Help Manuel go from a folding table in Abuela's backyard to a corner stand, a food truck, a truck fleet, a Depop shop and a taco empire. Golden tacos, 80+ achievements, Depop drops, prestige ("a new summer"), offline earnings, and save export/import. Pure HTML/CSS/JS in `public/games/taco-clicker/`, no build step.
+- **Manuel's Taco Clicker** — a cookie-clicker style idle game that ships with Shuttle. Open it from the Games page or go to `/games/taco-clicker/`. Manuel starts at a folding table in Abuela's backyard, builds a taco stand and a truck fleet, then rebirths into a Depop seller and finally a taco-and-merch empire, earning far more each life. Three lives with 21 businesses, 12 chapters with story popups, golden tacos, click combos, side hustles with hype, 119 achievements, taco skins, a particle VFX layer, offline earnings and save export/import. Pure HTML/CSS/JS in `public/games/taco-clicker/`, no build step.
 
 ## Discord Server
 
