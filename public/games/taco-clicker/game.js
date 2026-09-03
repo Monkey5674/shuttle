@@ -404,6 +404,7 @@ function step(ms) {
   if (secondAcc >= 1000) { secondAcc = 0; checkChapter(); checkAchievements(); if (now() - lastSaveAt > C.AUTOSAVE_MS) save(false); }
 }
 function applyOffline(fromLoad, dtOverride) {
+  syncUpgSet(); frameId++;
   const t = now(); const elapsedRaw = dtOverride != null ? dtOverride : t - S.t;
   const { rate, capMs } = offlineSettings(); const elapsed = clamp(elapsedRaw, 0, capMs);
   lastTick = t; acc = 0;
@@ -489,7 +490,7 @@ function startStorm() { stormOn = true; stormAcc = 0; $('tacoBtn').classList.add
 function endStorm() { if (!stormOn) return; stormOn = false; stormEls.forEach((e) => e.remove()); stormEls = []; $('tacoBtn').classList.remove('frenzy'); }
 function stormTick(ms) {
   if (!stormOn) return; stormAcc += ms;
-  if (stormAcc >= 220 && stormEls.length < C.STORM_CAP && fxOn()) {
+  if (stormAcc >= 220 && stormEls.length < C.STORM_CAP) {
     stormAcc = 0;
     const scene = $('scene'); const b = el('button', 'storm-taco'); b.type = 'button'; b.setAttribute('aria-label', 'Storm taco');
     b.innerHTML = '<svg viewBox="0 0 240 200" aria-hidden="true"><use href="#taco"></use></svg>';
@@ -550,9 +551,10 @@ function checkChapter() {
   const i0 = life().chapters.indexOf(from), i1 = life().chapters.indexOf(c);
   const gainPct = Math.round(((1 + DATA.eraBonus * i1) / (1 + DATA.eraBonus * i0) - 1) * 100);
   toast({ kicker: 'Chapter ' + c, title: CHN[c].name, text: 'All income +' + gainPct + '% from now on.', icon: CHN[c].icon, cls: 'gold' });
-  FX.confetti(80); FX.flash('rgba(var(--era-accent-rgb),0.25)'); chime(660); chime(880, 0.15); chime(1320, 0.3);
+  FX.confetti(80); FX.flash(eraFlashColor(0.25)); chime(660); chime(880, 0.15); chime(1320, 0.3);
   save(false);
 }
+function eraFlashColor(alpha) { const rgb = getComputedStyle(document.body).getPropertyValue('--era-accent-rgb').trim() || '255,181,46'; return 'rgba(' + rgb + ',' + alpha + ')'; }
 function queueStory(n) { if (S.seenStory.includes(n)) return; storyQueue.push(n); pumpStories(); }
 function pumpStories() { if (modalOpen() || cinematicOpen()) return; while (storyQueue.length) { const n = storyQueue.shift(); if (S.seenStory.includes(n) || n > S.chapter) continue; S.seenStory.push(n); saveSoon(); openStory(n); return; } }
 function journalAdd(id) { if (S.journal.some((j) => j.id === id)) return; S.journal.push({ id, t: now() }); dirty.journal = true; }
@@ -574,7 +576,7 @@ function achievementProgress(a) {
     case 'clicks': return [S.clicks, a.v];
     case 'owned': return [S.producers[a.producer], a.v];
     case 'golden': return [S.stats.goldenClicked, a.v];
-    case 'era': return [Math.max(S.chapter, S.rebirths > 0 ? 12 : 0), a.v];
+    case 'era': return [S.chapter, a.v];
     case 'prestiges': return [S.prestiges, a.v];
     case 'rebirths': return [S.rebirths, a.v];
     case 'salsa': return [S.salsa, a.v];
@@ -1119,7 +1121,7 @@ const sceneParts = {
   boxes(x, y) { return `<g transform="translate(${x} ${y})"><rect x="0" y="0" width="54" height="44" rx="4" fill="#b5532a" stroke="${OUT}" stroke-width="3"/><path d="M27 0 v44 M0 22 h54" stroke="#fff3e2" stroke-width="4" opacity=".6"/><rect x="58" y="10" width="44" height="34" rx="4" fill="#c9915e" stroke="${OUT}" stroke-width="3"/><rect x="20" y="-34" width="46" height="34" rx="4" fill="#b5532a" stroke="${OUT}" stroke-width="3"/><path d="M43 -34 v34" stroke="#fff3e2" stroke-width="4" opacity=".6"/></g>`; },
   factory(x, y) { return `<g transform="translate(${x} ${y})"><rect x="0" y="40" width="230" height="110" rx="6" fill="#2b201d" stroke="${OUT}" stroke-width="3"/><path d="M0 40 l40 -26 v26 l40 -26 v26 l40 -26 v26" fill="#241a1c" stroke="${OUT}" stroke-width="3" stroke-linejoin="round"/><rect x="150" y="-30" width="22" height="70" fill="#3a2a2c" stroke="${OUT}" stroke-width="3"/><rect x="190" y="-10" width="22" height="50" fill="#3a2a2c" stroke="${OUT}" stroke-width="3"/><circle class="puff" cx="161" cy="-44" r="10" fill="#fff3e2" opacity=".25"/><circle class="puff" cx="201" cy="-26" r="8" fill="#fff3e2" opacity=".2"/>${sceneParts.sign(70, 96, 22, '#ffb52e', -2)}<rect x="20" y="110" width="190" height="10" rx="3" fill="#4a3324" stroke="${OUT}" stroke-width="2"/><g transform="translate(30 92) scale(.09)"><use href="#taco" width="240" height="200"/></g><g transform="translate(80 92) scale(.09)"><use href="#taco" width="240" height="200"/></g><g transform="translate(130 92) scale(.09)"><use href="#taco" width="240" height="200"/></g></g>`; },
   globe(x, y, r = 60) { return `<g transform="translate(${x} ${y})"><circle r="${r}" fill="#1f3a5e" stroke="${OUT}" stroke-width="3"/><path d="M${-r} 0 h${2 * r} M0 ${-r} v${2 * r}" stroke="#4fc3f7" stroke-width="2" opacity=".6"/><ellipse rx="${r * 0.5}" ry="${r}" fill="none" stroke="#4fc3f7" stroke-width="2" opacity=".6"/><ellipse rx="${r}" ry="${r * 0.4}" fill="none" stroke="#4fc3f7" stroke-width="2" opacity=".6"/><path d="M${-r * 0.5} ${-r * 0.3} q${r * 0.3} -${r * 0.3} ${r * 0.6} 0 q-${r * 0.1} ${r * 0.4} -${r * 0.6} ${r * 0.2} z" fill="#9fdc4b" opacity=".8"/><path d="M${r * 0.1} ${r * 0.2} q${r * 0.3} 0 ${r * 0.4} ${r * 0.3} q-${r * 0.4} ${r * 0.2} -${r * 0.4} -${r * 0.3} z" fill="#9fdc4b" opacity=".8"/><circle cx="${-r * 0.3}" cy="${-r * 0.4}" r="4" fill="#ff5a3c"/><circle cx="${r * 0.35}" cy="${r * 0.1}" r="4" fill="#ff5a3c"/><circle cx="${r * 0.05}" cy="${r * 0.5}" r="4" fill="#ff5a3c"/><path d="M0 ${r} v20 M-16 ${r + 20} h32" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/></g>`; },
-  blimp(x, y, s = 1) { return `<g transform="translate(${x} ${y}) scale(${s})" class="drift"><ellipse rx="80" ry="30" fill="#ff5a3c" stroke="${OUT}" stroke-width="3"/><path d="M-80 0 q-14 -16 -22 -10 v20 q8 6 22 -10 z" fill="#2b201d" stroke="${OUT}" stroke-width="3"/>${sceneParts.sign(0, 8, 20, '#fff3e2', -1)}<rect x="-24" y="26" width="48" height="18" rx="5" fill="#2b201d" stroke="${OUT}" stroke-width="3"/><rect x="-16" y="30" width="32" height="8" rx="2" fill="#ffb52e" opacity=".6"/></g>`; },
+  blimp(x, y, s = 1) { return `<g transform="translate(${x} ${y}) scale(${s})"><g class="drift"><ellipse rx="80" ry="30" fill="#ff5a3c" stroke="${OUT}" stroke-width="3"/><path d="M-80 0 q-14 -16 -22 -10 v20 q8 6 22 -10 z" fill="#2b201d" stroke="${OUT}" stroke-width="3"/>${sceneParts.sign(0, 8, 20, '#fff3e2', -1)}<rect x="-24" y="26" width="48" height="18" rx="5" fill="#2b201d" stroke="${OUT}" stroke-width="3"/><rect x="-16" y="30" width="32" height="8" rx="2" fill="#ffb52e" opacity=".6"/></g></g>`; },
   moonGround() { return `<path d="M-20 380 Q 210 300 440 380 Z" fill="#3a3540" stroke="${OUT}" stroke-width="3"/><circle cx="120" cy="352" r="10" fill="#2e2a34"/><circle cx="300" cy="346" r="14" fill="#2e2a34"/><circle cx="210" cy="332" r="6" fill="#2e2a34"/>`; },
   abuela(x, y, s = 1) { return `<g class="abuela" transform="translate(${x} ${y}) scale(${s})" role="button" tabindex="0" aria-label="Abuela. Click to hear what she thinks." data-abuela="1"><ellipse cx="0" cy="2" rx="28" ry="6" fill="#000" opacity=".3"/><path d="M-24 0 L-18 -74 L18 -74 L24 0 Z" fill="#8c2f5a" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/><path d="M-15 0 L-12 -56 L12 -56 L15 0 Z" fill="#fff3e2" stroke="${OUT}" stroke-width="3" stroke-linejoin="round"/><path d="M-18 -66 C-34 -58 -34 -36 -22 -30" fill="none" stroke="${OUT}" stroke-width="10" stroke-linecap="round"/><path d="M-18 -66 C-34 -58 -34 -36 -22 -30" fill="none" stroke="#e8b48f" stroke-width="5" stroke-linecap="round"/><path d="M18 -66 C34 -58 34 -36 22 -30" fill="none" stroke="${OUT}" stroke-width="10" stroke-linecap="round"/><path d="M18 -66 C34 -58 34 -36 22 -30" fill="none" stroke="#e8b48f" stroke-width="5" stroke-linecap="round"/><circle cx="0" cy="-92" r="19" fill="#e8b48f" stroke="${OUT}" stroke-width="4"/><path d="M-19 -96 A19 19 0 0 1 19 -96 L15 -104 A17 17 0 0 0 -15 -104 Z" fill="#d9d4cf" stroke="${OUT}" stroke-width="3" stroke-linejoin="round"/><circle cx="0" cy="-114" r="9" fill="#d9d4cf" stroke="${OUT}" stroke-width="3"/><circle cx="-7" cy="-92" r="5" fill="none" stroke="${OUT}" stroke-width="2.5"/><circle cx="7" cy="-92" r="5" fill="none" stroke="${OUT}" stroke-width="2.5"/><path d="M-2 -92 h4" stroke="${OUT}" stroke-width="2.5"/><path d="M-6 -82 q6 5 12 0" fill="none" stroke="${OUT}" stroke-width="2.5" stroke-linecap="round"/><circle cx="-13" cy="-84" r="3" fill="#ff5a3c" opacity=".5"/><circle cx="13" cy="-84" r="3" fill="#ff5a3c" opacity=".5"/></g>`; },
 };
@@ -1164,7 +1166,7 @@ function applySkin() { document.body.dataset.skin = S.skin; }
    VFX engine (one canvas over everything, only animates while busy)
    ========================================================================== */
 const FX = (() => {
-  const canvas = $('fx'); const ctx = canvas.getContext('2d');
+  const canvas = $('fx'); const ctx = canvas.getContext('2d'); const probe = document.createElement('canvas').getContext('2d');
   let parts = [], rings = [], flashes = [], raf = 0, last = 0, w = 0, h = 0, dpr = 1;
   const COLORS = { coin: ['#ffb52e', '#ffd479', '#f2b134'], crumb: ['#f2b134', '#8fd14f', '#ff5a3c', '#ffd54a'], star: ['#ffd479', '#fff3e2', '#ffb52e'], confetti: ['#ffb52e', '#ff5a3c', '#9fdc4b', '#d96bff', '#4fc3f7', '#fff3e2'], bill: ['#9fdc4b', '#7bc043', '#b6ea6c'], heart: ['#ff4fa3', '#d96bff', '#ff5a3c'], ember: ['#ff5a3c', '#ffb52e', '#ffd54a'] };
   function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); w = window.innerWidth; h = window.innerHeight; canvas.width = Math.floor(w * dpr); canvas.height = Math.floor(h * dpr); canvas.style.width = w + 'px'; canvas.style.height = h + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
@@ -1174,7 +1176,7 @@ const FX = (() => {
     embers: false, resize,
     burst(x, y, type = 'crumb', n = 8) { for (let i = 0; i < n; i++) { const a = rand(0, Math.PI * 2), sp = rand(120, type === 'star' ? 520 : 380); spawn(type, x, y, Math.cos(a) * sp, Math.sin(a) * sp - 120, rand(0.5, 0.9), type === 'coin' ? rand(5, 8) : type === 'star' ? rand(6, 11) : rand(3, 6)); } },
     ring(x, y, color = '#ffd479') { if (!fxOn()) return; rings.push({ x, y, r: 12, age: 0, life: 0.55, color }); kick(); },
-    flash(color) { if (!fxOn()) return; flashes.push({ color, age: 0, life: 0.45 }); kick(); },
+    flash(color) { if (!fxOn()) return; probe.fillStyle = '#000'; probe.fillStyle = color; if (probe.fillStyle === '#000000') return; flashes.push({ color, age: 0, life: 0.45 }); kick(); },
     confetti(n = 60) { for (let i = 0; i < n; i++) spawn('confetti', rand(0, w), rand(-40, -5), rand(-60, 60), rand(120, 260), rand(2.2, 3.4), rand(5, 9), { g: 140, drag: 0.98, sway: rand(1, 3), phase: rand(0, 6) }); },
     rain(type = 'bill', n = 30) { for (let i = 0; i < n; i++) spawn(type, rand(0, w), rand(-200, -10), rand(-30, 30), rand(160, 320), rand(2, 3), type === 'bill' ? rand(14, 22) : rand(6, 10), { g: 60, drag: 0.99, sway: rand(1, 2.5), phase: rand(0, 6) }); },
     rise(x, y, type = 'heart', n = 10) { for (let i = 0; i < n; i++) spawn(type, x + rand(-30, 30), y, rand(-40, 40), rand(-260, -120), rand(1, 1.6), rand(6, 12), { g: -60, drag: 0.98 }); },
@@ -1225,19 +1227,20 @@ function openRebirthCinematic() {
   const stats = el('div', 'cine-stats'); stats.appendChild(el('span', null, DATA.ui.cloutLabel + ' ×' + cloutMult() + ' → ×' + (cloutMult() * 2))); stats.appendChild(el('span', null, legend ? '+' + pendingSalsa() + ' Salsa Points' : 'New shop: ' + to.name)); stats.appendChild(el('span', null, S.life < 3 && !legend ? 'Old businesses keep earning' : 'Achievements and notebook stay')); inner.appendChild(stats);
   const row = el('div', 'cine-actions');
   const go = el('button', 'btn btn-primary cine-btn', rb.button); go.type = 'button';
-  const no = el('button', 'btn', 'Not yet'); no.type = 'button'; no.addEventListener('click', closeCinematic);
+  const no = el('button', 'btn', 'Not yet'); no.type = 'button'; no.addEventListener('click', () => closeCinematic());
   row.appendChild(no); row.appendChild(go); inner.appendChild(row); c.appendChild(inner);
-  c.hidden = false; hideTip(); requestAnimationFrame(() => c.classList.add('show'));
+  c.setAttribute('role', 'dialog'); c.setAttribute('aria-modal', 'true'); c.hidden = false; setInert(true); hideTip(); requestAnimationFrame(() => c.classList.add('show'));
   FX.flash('rgba(217,107,255,0.25)'); FX.ring(window.innerWidth / 2, window.innerHeight / 2, '#d96bff'); chime(523); chime(659, 0.12); chime(784, 0.24); chime(1046, 0.36);
   go.addEventListener('click', () => {
-    go.disabled = true; c.classList.add('go');
+    go.disabled = true; no.disabled = true; c.classList.add('go');
     FX.burst(window.innerWidth / 2, window.innerHeight / 2, 'star', 90); FX.confetti(120); FX.flash('rgba(255,243,226,0.6)'); shake(10);
     chime(1046); chime(1318, 0.1); chime(1568, 0.2); chime(2093, 0.3);
-    setTimeout(() => { rebirth(); closeCinematic(); }, 900);
+    setTimeout(() => { if (c.hidden || !c.classList.contains('go')) return; rebirth(); closeCinematic(true); }, 900);
   });
   setTimeout(() => go.focus(), 50);
 }
-function closeCinematic() { const c = $('cinematic'); c.classList.remove('show', 'go'); c.hidden = true; c.innerHTML = ''; setTimeout(pumpStories, 200); }
+function setInert(on) { document.querySelectorAll('.topbar, .layout, .tabbar, #toasts').forEach((n) => { n.inert = on; }); }
+function closeCinematic(force) { const c = $('cinematic'); if (!force && c.classList.contains('go')) return; c.classList.remove('show', 'go'); c.hidden = true; c.innerHTML = ''; setInert(false); setTimeout(pumpStories, 200); }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cinematicOpen() && !$('cinematic').classList.contains('go')) closeCinematic(); });
 
 /* ==========================================================================
@@ -1294,7 +1297,7 @@ function rebuildAll() {
 function wireInput() {
   const taco = $('tacoBtn');
   taco.addEventListener('pointerdown', (e) => { if (e.button !== 0 && e.pointerType === 'mouse') return; e.preventDefault(); sellTaco(e); });
-  taco.addEventListener('keydown', (e) => { if (e.repeat) return; if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); const r = taco.getBoundingClientRect(); sellTaco({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }); } });
+  taco.addEventListener('keydown', (e) => { if (e.repeat || cinematicOpen()) return; if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); const r = taco.getBoundingClientRect(); sellTaco({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }); } });
   taco.addEventListener('click', (e) => e.preventDefault()); taco.addEventListener('contextmenu', (e) => e.preventDefault());
   document.addEventListener('keydown', (e) => { if (e.key === ' ' && !e.repeat && !modalOpen() && !cinematicOpen() && (document.activeElement === document.body || document.activeElement === null)) { e.preventDefault(); const r = taco.getBoundingClientRect(); sellTaco({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }); } });
   document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => { ensureAudio(); openPanel(b.dataset.open); }));
