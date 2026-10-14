@@ -5,7 +5,7 @@ const { dialog, shell } = require('electron');
 const store = require('./store');
 
 const INTERNAL_SCHEME = 'drew:';
-const INTERNAL_PAGES = new Set(['newtab', 'bookmarks', 'history', 'downloads', 'settings', 'error', 'about']);
+const INTERNAL_PAGES = new Set(['newtab', 'bookmarks', 'history', 'downloads', 'settings', 'error', 'about', 'auth']);
 
 function isWebUrl(url) { return /^https?:\/\//i.test(url || ''); }
 function isInternal(url) { return (url || '').startsWith(INTERNAL_SCHEME + '//'); }

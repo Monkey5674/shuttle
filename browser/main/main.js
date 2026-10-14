@@ -18,6 +18,10 @@ protocolMod.registerPrivileged();
 // Chromium hardening / quality-of-life switches.
 app.commandLine.appendSwitch('enable-features', 'PartitionedCookies,ThirdPartyStoragePartitioning');
 app.commandLine.appendSwitch('disable-features', 'InterestCohort,Topics,PrivacySandboxAdsAPIs,BrowsingTopics,AttributionReporting');
+// Let Chromium answer NTLM/Kerberos challenges from proxies and intranet
+// sites with the signed-in Windows account, like Chrome and Edge do.
+app.commandLine.appendSwitch('auth-server-whitelist', '*');
+app.commandLine.appendSwitch('auth-negotiate-delegate-whitelist', '*');
 
 app.on('second-instance', (e, argv) => {
   const windows = require('./windows');
@@ -66,6 +70,7 @@ app.whenReady().then(async () => {
   protocolMod.handle();
   Menu.setApplicationMenu(null);
 
+  require('./auth').install();
   require('./sessions').configure(session.defaultSession, { isPrivate: false });
   require('./ipc').register();
   const appState = require('./app-state');

@@ -19,7 +19,14 @@ const MESSAGES = {
   '-27': ['Blocked', 'This request was blocked by the browser.'],
   '-310': ['Too many redirects', 'The page redirected you too many times. Clearing cookies for this site may help.'],
   '-324': ['Empty response', `${host} did not send any data.`],
-  '-2': ['Load failed', 'The page could not be loaded.']
+  '-2': ['Load failed', 'The page could not be loaded.'],
+  '-21': ['Network access denied', 'Windows or the network blocked this app from connecting. Check the firewall, or the proxy settings in drew://settings.'],
+  '-111': ['Could not reach the proxy', 'The network proxy did not let the connection through. Check the proxy settings in drew://settings, or sign in to the network first.'],
+  '-115': ['Proxy sign-in not supported', 'The proxy wants a kind of sign-in this browser could not complete. Check the proxy settings in drew://settings.'],
+  '-127': ['Proxy sign-in needed', 'The network proxy asked for a sign-in that was cancelled. Reload and enter your network username and password.'],
+  '-130': ['Could not connect to the proxy', 'The proxy server in the settings did not answer. Check the proxy settings in drew://settings.'],
+  '-137': ['Proxy address not found', 'The proxy server name could not be looked up. Check the proxy settings in drew://settings.'],
+  '-338': ['Certificate required', 'This site asks for a client certificate, which this browser does not support.']
 };
 const [t, m] = MESSAGES[String(code)] || (code <= -200 && code > -300 ? MESSAGES['-200'] : [`This page can't be loaded`, desc.includes('crash') ? desc : `An error occurred while loading ${host || 'the page'}.`]);
 $('#title').textContent = t; $('#msg').textContent = m;

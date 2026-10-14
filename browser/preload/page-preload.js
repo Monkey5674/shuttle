@@ -14,6 +14,8 @@ if (location.protocol === 'drew:') {
     downloads: { list: invoke('downloads:list'), pause: invoke('downloads:pause'), resume: invoke('downloads:resume'), cancel: invoke('downloads:cancel'), remove: invoke('downloads:remove'), clear: invoke('downloads:clear'), open: invoke('downloads:open'), show: invoke('downloads:show'), openFolder: invoke('downloads:open-folder') },
     privacy: { status: invoke('privacy:status'), updateList: invoke('privacy:update-list'), allowlistRemove: invoke('privacy:allowlist-remove'), clearData: invoke('privacy:clear-data') },
     permissions: { list: invoke('permissions:list'), clear: invoke('permissions:clear') },
+    auth: { submit: invoke('auth:submit'), cancel: invoke('auth:cancel') },
+    proxy: { status: invoke('proxy:status') },
     onDownloads: on('downloads:update')
   });
 }

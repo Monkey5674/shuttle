@@ -36,6 +36,18 @@
   <div class="row"><div class="label">Site permissions you have saved (camera, location, notifications…)</div><div><span id="permcount" class="muted"></span> <button id="clearPerms">Reset all</button></div></div>
 </div>
 
+<div class="card"><h2 style="margin-top:0">Network &amp; proxy</h2>
+  <p class="muted" style="margin:0 0 6px;font-size:12px">If pages will not load on a school or work network, the network probably uses a proxy. "Automatic" copies the proxy that Chrome or Edge is set to use on this PC, otherwise it uses the Windows proxy settings.</p>
+  <div class="row"><div class="label">Proxy<div class="desc" id="proxyinfo"></div></div>
+    <select id="proxyMode"><option value="auto">Automatic (recommended)</option><option value="system">Windows system proxy</option><option value="direct">No proxy</option><option value="manual">Manual proxy server</option><option value="pac">Automatic configuration script (PAC)</option></select></div>
+  <div class="row" id="proxyServerRow" hidden><div class="label">Proxy server<div class="desc">For example proxy.school.org:8080</div></div>
+    <input id="proxyServer" type="text" style="width:320px" placeholder="host:port"></div>
+  <div class="row" id="proxyBypassRow" hidden><div class="label">Do not use the proxy for<div class="desc">Comma separated, for example localhost, *.school.org</div></div>
+    <input id="proxyBypass" type="text" style="width:320px" placeholder="&lt;local&gt;"></div>
+  <div class="row" id="proxyPacRow" hidden><div class="label">PAC script address</div>
+    <input id="proxyPac" type="url" style="width:320px" placeholder="http://proxy.school.org/proxy.pac"></div>
+</div>
+
 <div class="card" id="clear"><h2 style="margin-top:0">Clear browsing data</h2>
   <div class="toolbar">
     <label><input type="checkbox" id="c-history" checked> Browsing history</label>

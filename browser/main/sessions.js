@@ -5,6 +5,7 @@ const { app, dialog } = require('electron');
 const privacy = require('./privacy');
 const store = require('./store');
 const downloads = require('./downloads');
+const proxy = require('./proxy');
 
 const SENSITIVE = new Set(['media', 'geolocation', 'notifications', 'midi', 'midiSysex', 'clipboard-read', 'clipboard-sanitized-write',
   'display-capture', 'idle-detection', 'hid', 'serial', 'usb', 'bluetooth', 'speaker-selection', 'storage-access', 'top-level-storage-access', 'window-management', 'local-fonts', 'keyboardLock']);
@@ -27,6 +28,7 @@ function configure(session, { isPrivate = false } = {}) {
 
   privacy.applyTo(session);
   downloads.attach(session);
+  proxy.apply(session);
 
   session.setPermissionRequestHandler(async (wc, permission, callback, details) => {
     const url = (details && details.requestingUrl) || (wc && wc.getURL()) || '';

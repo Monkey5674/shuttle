@@ -20,7 +20,11 @@ const DEFAULT_SETTINGS = {
   remoteBlocklistUrl: 'https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext',
   askWhereToSave: false,
   clearOnExit: false,
-  theme: 'system'
+  theme: 'system',
+  proxyMode: 'auto',
+  proxyServer: '',
+  proxyPac: '',
+  proxyBypass: ''
 };
 
 const SEARCH_ENGINES = {

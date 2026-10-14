@@ -9,6 +9,7 @@ const windows = require('./windows');
 const downloads = require('./downloads');
 const appState = require('./app-state');
 const urls = require('./urls');
+const proxy = require('./proxy');
 const { exportBookmarksHtml, importBookmarksHtml } = require('./bookmarks-io');
 
 function senderIsUi(event) {
@@ -94,6 +95,9 @@ function register() {
     const result = store.settings.set(patch);
     for (const w of windows.all()) if (!w.win.isDestroyed()) w.ui.webContents.send('settings:update', result);
     if (patch && patch.remoteBlocklist) privacy.updateRemoteList(false);
+    if (patch && Object.keys(patch).some((k) => k.startsWith('proxy'))) {
+      for (const w of windows.all()) proxy.apply(w.session);
+    }
     return result;
   });
   shared('bookmarks:list', () => store.bookmarks.all());
@@ -148,6 +152,7 @@ function register() {
   shared('privacy:clear-data', (ctx, opts) => appState.clearBrowsingData(opts));
   shared('permissions:list', () => store.permissions.all());
   shared('permissions:clear', () => store.permissions.clear());
+  shared('proxy:status', () => proxy.status());
   shared('page:open', (ctx, url, opts) => {
     // Internal pages may only open the kinds of URLs a user could type.
     const target = urls.fromUserInput(url);

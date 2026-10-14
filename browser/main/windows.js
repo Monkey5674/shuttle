@@ -130,7 +130,9 @@ class BrowserWin {
     if (index == null || index < 0 || index > this.tabs.length) this.tabs.push(tab); else this.tabs.splice(index, 0, tab);
     this.wireTab(tab);
     view.setBackgroundColor('#ffffff');
-    this.win.contentView.addChildView(view);
+    // Insert page views *below* the chrome UI view (index 0 = bottom of the
+    // stack) so menus and dropdowns always render above the page.
+    this.win.contentView.addChildView(view, 0);
     view.setVisible(false);
     view.webContents.loadURL(tab.url).catch(() => {});
     if (active) this.activate(tab.id); else this.broadcast();
