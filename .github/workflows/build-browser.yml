@@ -1,0 +1,68 @@
+name: Build Drew's Browser (Windows)
+
+# Builds the Windows installer + portable exe on a GitHub-hosted Windows
+# runner and publishes them on the repository's Releases page, so nobody
+# needs Node.js installed locally to get the app.
+on:
+  workflow_dispatch:
+  push:
+    branches: [drews-browser, main]
+    paths:
+      - 'browser/**'
+      - '.github/workflows/build-browser.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: browser
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build installer and portable exe
+        run: npx electron-builder --win nsis portable --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: List build output
+        run: dir release
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: drews-browser-windows
+          path: browser/release/*.exe
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: drews-browser-v${{ steps.version.outputs.version }}
+          name: Drew's Browser ${{ steps.version.outputs.version }}
+          make_latest: true
+          body: |
+            Drew's Browser for Windows 11.
+
+            **Download one of the files below:**
+            - `Drew.s.Browser.Setup.*.exe` – installer (adds a Start menu entry, uninstalls from Settings > Apps)
+            - `Drew.s.Browser.*.exe` – portable, runs from anywhere with no install
+
+            Windows SmartScreen will show "Windows protected your PC" the first time because the file is unsigned.
+            Click **More info**, then **Run anyway**.
+          files: browser/release/*.exe
