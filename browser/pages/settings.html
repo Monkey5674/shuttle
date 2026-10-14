@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Settings</title><link rel="stylesheet" href="shared.css"></head>
+<body><main>
+<h1>Settings</h1>
+
+<div class="card"><h2 style="margin-top:0">General</h2>
+  <div class="row"><div class="label">Search engine<div class="desc">Used when you type something that is not a web address.</div></div>
+    <select id="searchEngine"></select></div>
+  <div class="row" id="customSearchRow" hidden><div class="label">Custom search URL<div class="desc">Use %s where the search terms go.</div></div>
+    <input id="customSearchUrl" type="url" style="width:320px" placeholder="https://example.com/search?q=%s"></div>
+  <div class="row"><div class="label">Home page<div class="desc">Opened with the Home button and Alt+Home. Use drew://newtab for the new tab page.</div></div>
+    <input id="homepage" type="text" style="width:320px"></div>
+  <div class="row"><div class="label">Restore open tabs on startup</div><label class="switch"><input type="checkbox" id="restoreSession"><span></span></label></div>
+  <div class="row"><div class="label">Show bookmarks bar</div><label class="switch"><input type="checkbox" id="showBookmarksBar"><span></span></label></div>
+  <div class="row"><div class="label">Appearance</div>
+    <select id="theme"><option value="system">Follow Windows</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+  <div class="row"><div class="label">Ask where to save each download</div><label class="switch"><input type="checkbox" id="askWhereToSave"><span></span></label></div>
+</div>
+
+<div class="card"><h2 style="margin-top:0">Privacy &amp; security</h2>
+  <div class="row"><div class="label">Block trackers and ads<div class="desc">Blocks requests to known tracking and advertising domains. <span id="listinfo" class="muted"></span></div></div>
+    <label class="switch"><input type="checkbox" id="blockTrackers"><span></span></label></div>
+  <div class="row"><div class="label">Use the remote blocklist<div class="desc">Downloads an up-to-date ad/tracker host list every few days (in addition to the built-in list).</div></div>
+    <label class="switch"><input type="checkbox" id="remoteBlocklist"><span></span></label></div>
+  <div class="row"><div class="label">Blocklist URL<div class="desc">A hosts-format or domain-per-line list.</div></div>
+    <input id="remoteBlocklistUrl" type="url" style="width:320px"></div>
+  <div class="row"><div class="label"></div><button id="updateList">Update list now</button></div>
+  <div class="row"><div class="label">Block third-party cookies<div class="desc">Stops sites you are not visiting from setting or reading cookies (the main cross-site tracking technique).</div></div>
+    <label class="switch"><input type="checkbox" id="blockThirdPartyCookies"><span></span></label></div>
+  <div class="row"><div class="label">Remove tracking parameters from links<div class="desc">Strips utm_*, fbclid, gclid and similar identifiers from addresses you open.</div></div>
+    <label class="switch"><input type="checkbox" id="stripTrackingParams"><span></span></label></div>
+  <div class="row"><div class="label">Always use HTTPS when possible<div class="desc">Upgrades http:// links to https:// and falls back only when the secure version fails.</div></div>
+    <label class="switch"><input type="checkbox" id="httpsUpgrade"><span></span></label></div>
+  <div class="row"><div class="label">Send "Do Not Track" and Global Privacy Control signals</div><label class="switch"><input type="checkbox" id="sendDoNotTrack"><span></span></label></div>
+  <div class="row"><div class="label">Clear cookies, cache and history when the browser closes</div><label class="switch"><input type="checkbox" id="clearOnExit"><span></span></label></div>
+  <div class="row"><div class="label">Sites where protection is turned off</div><div id="allowlist" class="muted">None</div></div>
+  <div class="row"><div class="label">Site permissions you have saved (camera, location, notifications…)</div><div><span id="permcount" class="muted"></span> <button id="clearPerms">Reset all</button></div></div>
+</div>
+
+<div class="card" id="clear"><h2 style="margin-top:0">Clear browsing data</h2>
+  <div class="toolbar">
+    <label><input type="checkbox" id="c-history" checked> Browsing history</label>
+    <label><input type="checkbox" id="c-cookies" checked> Cookies and site data</label>
+    <label><input type="checkbox" id="c-cache" checked> Cached files</label>
+    <label><input type="checkbox" id="c-downloads"> Download list</label>
+  </div>
+  <button id="clearData" class="danger">Clear now</button> <span id="clearStatus" class="muted"></span>
+</div>
+
+<p class="muted" id="version"></p>
+</main><script src="shared.js"></script><script src="settings.js"></script></body></html>

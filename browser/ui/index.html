@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https: http:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>Drew's Browser</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body>
+<div id="backdrop" hidden></div>
+<div id="chrome">
+  <div id="tabstrip" class="row">
+    <div id="tabs"></div>
+    <button id="newtab" class="icon-btn no-drag" title="New tab (Ctrl+T)">+</button>
+    <div id="private-badge" class="no-drag" hidden title="Private window: history, cookies and site data are discarded when this window closes">Private</div>
+  </div>
+  <div id="toolbar" class="row">
+    <button id="back" class="icon-btn" title="Back (Alt+Left)" disabled>&#x2190;</button>
+    <button id="forward" class="icon-btn" title="Forward (Alt+Right)" disabled>&#x2192;</button>
+    <button id="reload" class="icon-btn" title="Reload (F5)">&#x21bb;</button>
+    <button id="home" class="icon-btn" title="Home (Alt+Home)">&#x2302;</button>
+    <div id="omnibox">
+      <span id="security" class="sec neutral" title=""></span>
+      <input id="address" type="text" spellcheck="false" autocomplete="off" placeholder="Search or enter address">
+      <span id="zoom-badge" hidden></span>
+      <button id="star" class="icon-btn small" title="Bookmark this page (Ctrl+D)">&#x2606;</button>
+      <div id="suggestions" hidden></div>
+    </div>
+    <button id="shield" class="icon-btn" title="Tracking protection"><span class="shield-glyph">&#x26E8;</span><span id="shield-count" hidden>0</span></button>
+    <button id="downloads-btn" class="icon-btn" title="Downloads (Ctrl+J)">&#x2B73;</button>
+    <button id="menu-btn" class="icon-btn" title="Menu">&#x22EE;</button>
+  </div>
+  <div id="bookmarks-bar" class="row" hidden>
+    <div id="bookmarks-list"></div>
+    <span id="bookmarks-empty" class="muted">No bookmarks yet. Press Ctrl+D on a page to bookmark it.</span>
+  </div>
+  <div id="findbar" class="row" hidden>
+    <input id="find-input" type="text" placeholder="Find in page" spellcheck="false">
+    <span id="find-count" class="muted"></span>
+    <button id="find-prev" class="icon-btn small" title="Previous (Shift+Enter)">&#x2191;</button>
+    <button id="find-next" class="icon-btn small" title="Next (Enter)">&#x2193;</button>
+    <button id="find-close" class="icon-btn small" title="Close (Esc)">&#x2715;</button>
+  </div>
+</div>
+
+<div id="menu" class="popup" hidden>
+  <button data-act="newtab">New tab <kbd>Ctrl+T</kbd></button>
+  <button data-act="newwindow">New window <kbd>Ctrl+N</kbd></button>
+  <button data-act="private">New private window <kbd>Ctrl+Shift+N</kbd></button>
+  <hr>
+  <button data-act="bookmarks">Bookmarks</button>
+  <button data-act="history">History <kbd>Ctrl+H</kbd></button>
+  <button data-act="downloads">Downloads <kbd>Ctrl+J</kbd></button>
+  <hr>
+  <div class="zoom-row">Zoom <button data-act="zoomout" class="icon-btn small">&#x2212;</button><span id="zoom-value">100%</span><button data-act="zoomin" class="icon-btn small">+</button><button data-act="zoomreset" class="small-text">Reset</button></div>
+  <hr>
+  <button data-act="find">Find in page <kbd>Ctrl+F</kbd></button>
+  <button data-act="print">Print… <kbd>Ctrl+P</kbd></button>
+  <button data-act="bookmarksbar">Toggle bookmarks bar <kbd>Ctrl+Shift+B</kbd></button>
+  <button data-act="fullscreen">Full screen <kbd>F11</kbd></button>
+  <hr>
+  <button data-act="settings">Settings</button>
+  <button data-act="devtools">Developer tools <kbd>F12</kbd></button>
+  <button data-act="about">About Drew's Browser</button>
+  <hr>
+  <button data-act="quit">Exit</button>
+</div>
+
+<div id="shield-panel" class="popup" hidden>
+  <div class="panel-title">Tracking protection</div>
+  <div id="shield-site" class="muted"></div>
+  <div id="shield-summary"></div>
+  <ul id="shield-hosts"></ul>
+  <button id="shield-toggle"></button>
+  <div class="muted small-text" id="shield-stats"></div>
+</div>
+
+<div id="downloads-panel" class="popup" hidden>
+  <div class="panel-title">Downloads</div>
+  <div id="downloads-list"></div>
+  <div class="panel-actions">
+    <button data-act="folder">Open folder</button>
+    <button data-act="all">Show all</button>
+  </div>
+</div>
+
+<div id="tab-menu" class="popup" hidden>
+  <button data-act="newright">New tab to the right</button>
+  <button data-act="reload">Reload</button>
+  <button data-act="duplicate">Duplicate</button>
+  <button data-act="mute">Mute tab</button>
+  <hr>
+  <button data-act="close">Close tab</button>
+  <button data-act="closeothers">Close other tabs</button>
+  <button data-act="closeright">Close tabs to the right</button>
+  <button data-act="reopen">Reopen closed tab</button>
+</div>
+
+<div id="bm-menu" class="popup" hidden>
+  <button data-act="open">Open</button>
+  <button data-act="opennew">Open in new tab</button>
+  <hr>
+  <button data-act="edit">Edit…</button>
+  <button data-act="delete">Delete</button>
+</div>
+
+<div id="bm-dialog" class="popup dialog" hidden>
+  <div class="panel-title">Edit bookmark</div>
+  <label>Name <input id="bm-title" type="text"></label>
+  <label>URL <input id="bm-url" type="text"></label>
+  <label>Folder <input id="bm-folder" type="text" placeholder="(bookmarks bar)"></label>
+  <div class="panel-actions"><button data-act="save">Save</button><button data-act="cancel">Cancel</button></div>
+</div>
+
+<script src="ui.js"></script>
+</body>
+</html>

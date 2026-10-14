@@ -10,6 +10,13 @@
 [![Deploy to Amplify Console](https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/master/buttons/remade/amplifyconsole.svg)](https://console.aws.amazon.com/amplify/home#/deploy?repo=https://github.com/shuttlenetwork/shuttle)
 [![Run on Google Cloud](https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/master/buttons/remade/googlecloud.svg)](https://deploy.cloud.run/?git_repo=https://github.com/shuttlenetwork/shuttle)
 
+## Drew's Browser (desktop app for Windows 11)
+
+The [`browser/`](browser/) folder contains Drew's Browser, a standalone web browser built on
+Chromium/Electron with tabs, bookmarks, history, downloads, private windows and
+built-in tracking protection. See [browser/README.md](browser/README.md) for
+how to run it from source or build the Windows installer.
+
 ## To Do 
 You are welcome to submit pull requests aimed at enhancing shuttle.
 - [ ] a:b auto cloaking

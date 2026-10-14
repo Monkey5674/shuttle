@@ -1,0 +1,46 @@
+{
+  "name": "drews-browser",
+  "productName": "Drew's Browser",
+  "version": "0.1.0",
+  "description": "A small, privacy-minded web browser for Windows 11 built on Chromium (Electron)",
+  "main": "main/main.js",
+  "license": "GPL-3.0-or-later",
+  "author": "Drew",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable",
+    "dist:dir": "electron-builder --win --dir",
+    "test": "node test/smoke.js"
+  },
+  "devDependencies": {
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.drew.browser",
+    "productName": "Drew's Browser",
+    "files": [
+      "main/**",
+      "preload/**",
+      "ui/**",
+      "pages/**",
+      "data/**",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    },
+    "directories": {
+      "output": "release"
+    }
+  }
+}

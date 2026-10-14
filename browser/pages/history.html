@@ -1,0 +1,10 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>History</title><link rel="stylesheet" href="shared.css"></head>
+<body><main>
+<h1>History</h1>
+<div class="toolbar">
+  <input id="q" type="search" placeholder="Search history">
+  <select id="range"><option value="3600000">Last hour</option><option value="86400000">Last 24 hours</option><option value="604800000">Last 7 days</option><option value="0" selected>All time</option></select>
+  <button id="clear" class="danger">Clear selected range</button>
+</div>
+<div id="list"></div>
+</main><script src="shared.js"></script><script src="history.js"></script></body></html>

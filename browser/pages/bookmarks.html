@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Bookmarks</title><link rel="stylesheet" href="shared.css"></head>
+<body><main>
+<h1>Bookmarks</h1>
+<div class="toolbar">
+  <input id="q" type="search" placeholder="Search bookmarks">
+  <button id="add">Add bookmark</button>
+  <button id="import">Import HTML…</button>
+  <button id="export">Export HTML…</button>
+</div>
+<div id="list"></div>
+<div id="editor" class="card" hidden>
+  <h2 id="editor-title">Add bookmark</h2>
+  <div class="toolbar"><input id="e-title" type="text" placeholder="Name"><input id="e-url" type="url" placeholder="https://"><input id="e-folder" type="text" placeholder="Folder (optional)"></div>
+  <div class="toolbar"><button id="e-save">Save</button><button id="e-cancel">Cancel</button></div>
+</div>
+</main><script src="shared.js"></script><script src="bookmarks.js"></script></body></html>
