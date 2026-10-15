@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drew's Browser</title>
+<style>
+  /* ---- Drew's Browser: a browser interface built from scratch in one file ----
+     Palette: slate neutrals with a blue accent. Type: system UI stack.
+     Layout: fixed chrome (tab strip + toolbar + bookmarks) over a viewport
+     area that holds one iframe per tab. */
+  :root {
+    --bg: #dee1e6; --chrome: #f1f3f4; --fg: #202124; --muted: #5f6368;
+    --border: #c8ccd1; --tab: #dee1e6; --tab-active: #ffffff; --tab-hover: #e8eaed;
+    --input: #ffffff; --accent: #1a73e8; --accent-weak: #e8f0fe; --popup: #ffffff;
+    --hover: rgba(0,0,0,.06); --danger: #c5221f; --ok: #188038; --shadow: rgba(0,0,0,.25);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #202124; --chrome: #292a2d; --fg: #e8eaed; --muted: #9aa0a6;
+      --border: #3c4043; --tab: #202124; --tab-active: #35363a; --tab-hover: #292a2d;
+      --input: #202124; --accent: #8ab4f8; --accent-weak: #283142; --popup: #292a2d;
+      --hover: rgba(255,255,255,.08); --danger: #f28b82; --ok: #81c995; --shadow: rgba(0,0,0,.5);
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; flex-direction: column; background: var(--bg); color: var(--fg);
+    font: 14px system-ui, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; border-radius: 6px; cursor: pointer; }
+  button:hover:not(:disabled) { background: var(--hover); }
+  button:disabled { opacity: .4; cursor: default; }
+  .icon { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; flex: none; }
+  .icon.sm { width: 24px; height: 24px; font-size: 13px; }
+
+  /* tab strip */
+  #tabstrip { display: flex; align-items: flex-end; gap: 2px; height: 38px; padding: 6px 6px 0; background: var(--bg); overflow: hidden; }
+  .tab { display: flex; align-items: center; gap: 8px; height: 32px; min-width: 56px; max-width: 220px; flex: 1 1 200px;
+         padding: 0 6px 0 12px; border-radius: 9px 9px 0 0; background: var(--tab); position: relative; }
+  .tab:hover { background: var(--tab-hover); }
+  .tab.active { background: var(--tab-active); }
+  .tab .fav { width: 16px; height: 16px; flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: var(--muted); }
+  .tab .ttl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
+  .tab .x { width: 18px; height: 18px; border-radius: 50%; font-size: 12px; flex: none; display: inline-flex; align-items: center; justify-content: center; opacity: .65; }
+  .tab .x:hover { background: var(--hover); opacity: 1; }
+  #newtab { margin: 0 2px 3px; width: 28px; height: 28px; flex: none; font-size: 18px; }
+
+  /* toolbar */
+  #toolbar { display: flex; align-items: center; gap: 4px; height: 44px; padding: 0 8px; background: var(--chrome); border-bottom: 1px solid var(--border); }
+  #omni { flex: 1; display: flex; align-items: center; height: 32px; background: var(--input); border: 1px solid var(--border);
+          border-radius: 16px; padding: 0 6px 0 12px; min-width: 0; }
+  #omni:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  #lock { font-size: 12px; margin-right: 6px; color: var(--muted); flex: none; }
+  #addr { flex: 1; min-width: 0; border: none; outline: none; background: none; color: inherit; font: inherit; font-size: 13.5px; height: 100%; user-select: text; }
+  #star.on { color: var(--accent); }
+
+  /* bookmarks bar */
+  #bmbar { display: flex; align-items: center; gap: 2px; height: 30px; padding: 0 8px; background: var(--chrome); border-bottom: 1px solid var(--border); overflow: hidden; }
+  .bm { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 6px; max-width: 180px; font-size: 12.5px; white-space: nowrap; flex: none; }
+  .bm .fav { font-size: 11px; color: var(--muted); }
+  .bm .t { overflow: hidden; text-overflow: ellipsis; }
+  #bmempty { font-size: 12px; color: var(--muted); padding-left: 4px; }
+
+  /* viewport */
+  #views { flex: 1; position: relative; background: var(--tab-active); min-height: 0; }
+  .view { position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: #fff; }
+  .view[hidden] { display: none; }
+
+  /* start page (its own view, rendered inline) */
+  .start { position: absolute; inset: 0; overflow: auto; background: var(--chrome); color: var(--fg);
+           display: flex; flex-direction: column; align-items: center; padding: 10vh 20px 40px; }
+  .start h1 { font-size: 40px; font-weight: 700; letter-spacing: -1.5px; margin: 0 0 24px; }
+  .start h1 span { color: var(--accent); }
+  .start form { display: flex; gap: 8px; width: 100%; max-width: 560px; margin-bottom: 14px; }
+  .start input { flex: 1; font-size: 16px; padding: 13px 20px; border-radius: 26px; border: 1px solid var(--border); background: var(--input); color: var(--fg); outline: none; }
+  .start input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .start .eng { display: flex; gap: 6px; margin-bottom: 34px; flex-wrap: wrap; justify-content: center; }
+  .start .eng button { font-size: 12px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 14px; color: var(--muted); }
+  .start .eng button.on { background: var(--accent-weak); color: var(--accent); border-color: transparent; }
+  .start .grid { display: grid; grid-template-columns: repeat(auto-fill, 92px); gap: 14px; justify-content: center; width: 100%; max-width: 560px; }
+  .tile { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border-radius: 12px; background: var(--input); border: 1px solid var(--border); cursor: pointer; overflow: hidden; }
+  .tile:hover { background: var(--tab-hover); }
+  .tile .d { width: 36px; height: 36px; border-radius: 10px; background: var(--accent-weak); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; }
+  .tile .n { font-size: 12px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .start .note { margin-top: 34px; font-size: 12px; color: var(--muted); max-width: 540px; text-align: center; line-height: 1.5; }
+
+  /* blocked overlay (shown when a site refuses to embed) */
+  .blocked { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 30px; text-align: center; background: var(--chrome); color: var(--fg); }
+  .blocked.show { display: flex; }
+  .blocked h2 { margin: 0; font-size: 19px; }
+  .blocked p { margin: 0; max-width: 440px; color: var(--muted); line-height: 1.55; }
+  .blocked a { display: inline-block; margin-top: 4px; padding: 10px 20px; background: var(--accent); color: #fff; border-radius: 8px; text-decoration: none; font-weight: 500; }
+  .blocked a:hover { filter: brightness(1.08); }
+  .blocked .host { font-weight: 600; color: var(--fg); }
+
+  /* popups */
+  .popup { position: absolute; z-index: 50; top: 78px; right: 8px; background: var(--popup); border: 1px solid var(--border);
+           border-radius: 12px; box-shadow: 0 10px 30px var(--shadow); padding: 6px; min-width: 300px; max-width: 420px; max-height: 70vh; overflow: auto; }
+  .popup[hidden] { display: none; }
+  .popup h3 { margin: 4px 8px 8px; font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+  .popup button.row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 8px; }
+  .popup .sep { height: 1px; background: var(--border); margin: 5px 4px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; }
+  .item:hover { background: var(--hover); }
+  .item .fav { width: 16px; flex: none; text-align: center; color: var(--muted); font-size: 11px; }
+  .item .m { flex: 1; min-width: 0; cursor: pointer; }
+  .item .m .t { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .m .u { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .del { opacity: 0; font-size: 12px; }
+  .item:hover .del { opacity: .7; }
+  .item .del:hover { opacity: 1; color: var(--danger); }
+  .empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
+  kbd { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 11px; margin-left: auto; color: var(--muted); }
+
+  /* address suggestions */
+  #suggest { position: absolute; z-index: 60; background: var(--popup); border: 1px solid var(--border); border-radius: 12px;
+             box-shadow: 0 10px 30px var(--shadow); padding: 5px; overflow: hidden; }
+  #suggest[hidden] { display: none; }
+  .sg { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  .sg.sel, .sg:hover { background: var(--hover); }
+  .sg .k { width: 16px; text-align: center; color: var(--muted); font-size: 12px; flex: none; }
+  .sg .t { overflow: hidden; text-overflow: ellipsis; }
+  .sg .u { margin-left: auto; color: var(--muted); font-size: 12px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; flex: none; }
+
+  #scrim { position: fixed; inset: 0; z-index: 40; }
+  #scrim[hidden] { display: none; }
+</style>
+</head>
+<body>
+  <div id="tabstrip"></div>
+
+  <div id="toolbar">
+    <button class="icon" id="back" title="Back (Alt+Left)">&#x2190;</button>
+    <button class="icon" id="fwd" title="Forward (Alt+Right)">&#x2192;</button>
+    <button class="icon" id="reload" title="Reload (F5)">&#x21bb;</button>
+    <button class="icon" id="home" title="Start page">&#x2302;</button>
+    <div id="omni">
+      <span id="lock">&#x1F50D;</span>
+      <input id="addr" type="text" placeholder="Search DuckDuckGo or type a web address" spellcheck="false" autocomplete="off">
+      <button class="icon sm" id="star" title="Bookmark this page (Ctrl+D)">&#x2606;</button>
+    </div>
+    <button class="icon" id="bmbtn" title="Bookmarks">&#x2630;</button>
+    <button class="icon" id="hsbtn" title="History (Ctrl+H)">&#x1F551;</button>
+    <button class="icon" id="menu" title="Menu">&#x22EE;</button>
+  </div>
+
+  <div id="bmbar"></div>
+
+  <div id="views"></div>
+
+  <div id="scrim" hidden></div>
+
+  <div id="suggest" hidden></div>
+
+  <div class="popup" id="bmpop" hidden>
+    <h3>Bookmarks</h3>
+    <div id="bmlist"></div>
+  </div>
+
+  <div class="popup" id="hspop" hidden>
+    <h3>History</h3>
+    <div id="hslist"></div>
+    <div class="sep"></div>
+    <button class="row" id="clearhs">Clear all history</button>
+  </div>
+
+  <div class="popup" id="mpop" hidden>
+    <button class="row" data-a="newtab">New tab <kbd>Ctrl+T</kbd></button>
+    <button class="row" data-a="dup">Duplicate tab</button>
+    <div class="sep"></div>
+    <button class="row" data-a="bm">Bookmark this page <kbd>Ctrl+D</kbd></button>
+    <button class="row" data-a="copy">Copy page address</button>
+    <button class="row" data-a="open">Open in a real Chrome tab</button>
+    <div class="sep"></div>
+    <button class="row" data-a="clearall">Clear bookmarks &amp; history</button>
+    <button class="row" data-a="about">About Drew's Browser</button>
+  </div>
+
+<script>
+"use strict";
+/* ===== Drew's Browser — standalone web edition =====
+   Every tab is an <iframe>. We keep our own per-tab history stack because an
+   iframe's own history is not readable across origins. Bookmarks and history
+   persist in localStorage. Tracking parameters are stripped from any address
+   the user opens. Sites that refuse to be embedded (most big ones send
+   X-Frame-Options / frame-ancestors) show a panel with a button that opens the
+   real site in a normal Chrome tab. */
+
+const $ = (s, r = document) => r.querySelector(s);
+const el = (t, p = {}) => Object.assign(document.createElement(t), p);
+
+// ---- storage (best-effort; works without it) ----
+const store = {
+  get(k, def) { try { const v = localStorage.getItem('drew.' + k); return v ? JSON.parse(v) : def; } catch { return def; } },
+  set(k, v) { try { localStorage.setItem('drew.' + k, JSON.stringify(v)); } catch {} }
+};
+let bookmarks = store.get('bookmarks', []);
+let history = store.get('history', []);
+let engine = store.get('engine', 'duckduckgo');
+
+const ENGINES = {
+  duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=%s' },
+  bing: { name: 'Bing', url: 'https://www.bing.com/search?q=%s' },
+  google: { name: 'Google', url: 'https://www.google.com/search?q=%s' },
+  startpage: { name: 'Startpage', url: 'https://www.startpage.com/sp/search?query=%s' },
+  wikipedia: { name: 'Wikipedia', url: 'https://en.wikipedia.org/w/index.php?search=%s' }
+};
+
+const QUICK = [
+  { n: 'Wikipedia', u: 'https://en.wikipedia.org' },
+  { n: 'DuckDuckGo', u: 'https://duckduckgo.com' },
+  { n: 'Example', u: 'https://example.com' },
+  { n: 'MDN', u: 'https://developer.mozilla.org' },
+  { n: 'archive.org', u: 'https://archive.org' },
+  { n: 'Wiktionary', u: 'https://en.wiktionary.org' }
+];
+
+const TRACKING = new Set(['utm_source','utm_medium','utm_campaign','utm_term','utm_content','utm_id','fbclid','gclid','gclsrc','dclid','msclkid','mc_eid','mc_cid','yclid','igshid','_hsenc','_hsmi','mkt_tok','twclid','ttclid','vero_id','oly_anon_id','oly_enc_id','wickedid','_openstat','ScCid']);
+
+// ---- url helpers ----
+function host(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } }
+function looksLikeHost(t) {
+  if (t === 'localhost' || /^localhost[:/]/.test(t)) return true;
+  if (/^(\d{1,3}\.){3}\d{1,3}(:\d+)?/.test(t)) return true;
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?([/?#].*)?$/i.test(t) && !/\s/.test(t);
+}
+function toUrl(raw) {
+  const t = String(raw || '').trim();
+  if (!t) return null;
+  if (/^drew:start$/i.test(t)) return 'drew:start';
+  if (/^https?:\/\//i.test(t)) return clean(t);
+  if (looksLikeHost(t)) return clean('https://' + t);
+  return ENGINES[engine].url.replace('%s', encodeURIComponent(t));
+}
+function clean(u) {
+  try {
+    const url = new URL(u);
+    let changed = false;
+    for (const k of [...url.searchParams.keys()]) if (TRACKING.has(k) || /^utm_/i.test(k)) { url.searchParams.delete(k); changed = true; }
+    return changed ? url.toString() : u;
+  } catch { return u; }
+}
+
+// ---- tab model ----
+let tabs = [];
+let activeId = null;
+let nextId = 1;
+
+function activeTab() { return tabs.find(t => t.id === activeId); }
+
+function newTab(url = 'drew:start', { activate = true } = {}) {
+  const id = nextId++;
+  const frame = el('iframe', { className: 'view' });
+  frame.hidden = true;
+  frame.setAttribute('referrerpolicy', 'no-referrer');
+  const blocked = el('div', { className: 'blocked' });
+  blocked.hidden = true;
+  $('#views').append(frame, blocked);
+  const tab = { id, url: 'drew:start', title: 'New Tab', frame, blocked, stack: [], pos: -1, loadT: 0 };
+  tabs.push(tab);
+  wireFrame(tab);
+  if (activate) setActive(id);
+  go(url, tab);
+  renderTabs();
+  return tab;
+}
+
+function wireFrame(tab) {
+  tab.frame.addEventListener('load', () => {
+    clearTimeout(tab.loadT);
+    tab.blocked.classList.remove('show');
+    // Same-origin pages (our start page) let us read the title; cross-origin throws.
+    try {
+      const doc = tab.frame.contentDocument;
+      if (doc && tab.url !== 'drew:start') { tab.title = doc.title || host(tab.url) || tab.url; renderTabs(); }
+    } catch {}
+  });
+}
+
+function setActive(id) {
+  activeId = id;
+  for (const t of tabs) {
+    const on = t.id === id;
+    t.frame.hidden = !on || t.url === 'drew:start';
+    t.blocked.hidden = !on;
+    if (!on) t.blocked.classList.remove('show');
+    t.startEl && (t.startEl.hidden = !on || t.url !== 'drew:start');
+  }
+  const t = activeTab();
+  if (t) { syncAddr(t); updateNav(); }
+  renderTabs();
+}
+
+function closeTab(id) {
+  const i = tabs.findIndex(t => t.id === id);
+  if (i < 0) return;
+  const t = tabs[i];
+  t.frame.remove(); t.blocked.remove(); t.startEl && t.startEl.remove();
+  tabs.splice(i, 1);
+  if (!tabs.length) { newTab(); return; }
+  if (activeId === id) setActive(tabs[Math.min(i, tabs.length - 1)].id);
+  renderTabs();
+}
+
+// ---- navigation ----
+function go(input, tab = activeTab(), { push = true } = {}) {
+  if (!tab) return;
+  const url = (input === 'drew:start') ? 'drew:start' : toUrl(input);
+  if (!url) return;
+  tab.url = url;
+  if (push) { tab.stack = tab.stack.slice(0, tab.pos + 1); tab.stack.push(url); tab.pos = tab.stack.length - 1; }
+
+  if (url === 'drew:start') {
+    showStart(tab);
+    tab.title = 'New Tab';
+  } else {
+    hideStart(tab);
+    tab.blocked.classList.remove('show');
+    tab.title = host(url) || url;
+    tab.frame.hidden = tab.id !== activeId;
+    tab.frame.src = url;
+    recordHistory(url);
+    // If the frame has not fired load in time, the site almost certainly
+    // refused to be embedded. Offer the real-tab fallback.
+    clearTimeout(tab.loadT);
+    tab.loadT = setTimeout(() => showBlocked(tab, url), 3500);
+  }
+  if (tab.id === activeId) { syncAddr(tab); updateNav(); }
+  renderTabs();
+}
+
+function showBlocked(tab, url) {
+  const h = host(url) || url;
+  tab.blocked.innerHTML = '';
+  const title = el('h2', { textContent: h + " won't open inside a frame" });
+  const p = el('p');
+  p.innerHTML = 'Many large sites (Google, YouTube, most social media) tell browsers not to display them inside another page, for security. That is the site’s choice, not a block here. Open <span class="host">' + h + '</span> in a normal Chrome tab instead:';
+  const a = el('a', { href: url, target: '_blank', rel: 'noopener', textContent: 'Open ' + h + ' ↗' });
+  const p2 = el('p', { style: 'font-size:12px;margin-top:2px' });
+  p2.textContent = 'Sites like Wikipedia, example.com and many smaller pages do load inside the frame above.';
+  tab.blocked.append(title, p, a, p2);
+  tab.blocked.classList.add('show');
+}
+
+function back() { const t = activeTab(); if (t && t.pos > 0) { t.pos--; go(t.stack[t.pos], t, { push: false }); } }
+function fwd() { const t = activeTab(); if (t && t.pos < t.stack.length - 1) { t.pos++; go(t.stack[t.pos], t, { push: false }); } }
+function reload() { const t = activeTab(); if (!t) return; if (t.url === 'drew:start') showStart(t); else { t.frame.src = 'about:blank'; requestAnimationFrame(() => go(t.url, t, { push: false })); } }
+
+function updateNav() {
+  const t = activeTab();
+  $('#back').disabled = !t || t.pos <= 0;
+  $('#fwd').disabled = !t || t.pos >= t.stack.length - 1;
+  $('#star').classList.toggle('on', !!(t && isBookmarked(t.url)));
+  $('#star').textContent = (t && isBookmarked(t.url)) ? '★' : '☆';
+  const secure = t && /^https:/.test(t.url);
+  $('#lock').textContent = t && t.url === 'drew:start' ? '★' : secure ? '🔒' : '🔍';
+}
+
+function syncAddr(t) {
+  if (document.activeElement === $('#addr')) return;
+  $('#addr').value = t.url === 'drew:start' ? '' : t.url;
+}
+
+// ---- start page (built as a same-origin srcdoc-free inline element) ----
+function showStart(tab) {
+  hideStart(tab);
+  tab.frame.hidden = true;
+  const s = el('div', { className: 'start' });
+  s.hidden = tab.id !== activeId;
+  const engBtns = Object.entries(ENGINES).map(([k, v]) =>
+    `<button data-eng="${k}" class="${k === engine ? 'on' : ''}">${v.name}</button>`).join('');
+  const tiles = QUICK.map(q =>
+    `<div class="tile" data-u="${q.u}"><div class="d">${q.n[0]}</div><div class="n">${q.n}</div></div>`).join('');
+  s.innerHTML =
+    `<h1>Drew's <span>Browser</span></h1>
+     <form id="sform"><input id="sq" placeholder="Search the web or type a web address" autocomplete="off"></form>
+     <div class="eng">${engBtns}</div>
+     <div class="grid">${tiles}</div>
+     <div class="note">This is Drew's Browser running as a web page. Pages open in the frame above.
+       Big sites that block embedding open in a normal Chrome tab instead. Bookmarks and history are saved on this computer.</div>`;
+  $('#views').appendChild(s);
+  tab.startEl = s;
+  s.querySelector('#sform').addEventListener('submit', e => { e.preventDefault(); const v = s.querySelector('#sq').value.trim(); if (v) go(v, tab); });
+  s.querySelectorAll('[data-eng]').forEach(b => b.onclick = () => { engine = b.dataset.eng; store.set('engine', engine); s.querySelectorAll('[data-eng]').forEach(x => x.classList.toggle('on', x.dataset.eng === engine)); $('#addr').placeholder = 'Search ' + ENGINES[engine].name + ' or type a web address'; });
+  s.querySelectorAll('.tile').forEach(t => t.onclick = () => go(t.dataset.u, tab));
+  if (tab.id === activeId) setTimeout(() => s.querySelector('#sq').focus(), 0);
+}
+function hideStart(tab) { if (tab.startEl) { tab.startEl.remove(); tab.startEl = null; } }
+
+// ---- bookmarks ----
+function isBookmarked(u) { return bookmarks.some(b => b.url === u); }
+function toggleBookmark() {
+  const t = activeTab(); if (!t || t.url === 'drew:start') return;
+  const i = bookmarks.findIndex(b => b.url === t.url);
+  if (i >= 0) bookmarks.splice(i, 1);
+  else bookmarks.push({ url: t.url, title: t.title || host(t.url) || t.url });
+  store.set('bookmarks', bookmarks);
+  updateNav(); renderBookmarks();
+}
+function renderBookmarks() {
+  const bar = $('#bmbar'); bar.innerHTML = '';
+  if (!bookmarks.length) { bar.append(el('span', { id: 'bmempty', textContent: 'Bookmark pages with the ☆ star. They appear here.' })); }
+  else bookmarks.forEach(b => {
+    const e = el('button', { className: 'bm', title: b.url });
+    e.append(el('span', { className: 'fav', textContent: (host(b.url)[0] || '•').toUpperCase() }), el('span', { className: 't', textContent: b.title }));
+    e.onclick = () => go(b.url);
+    e.oncontextmenu = ev => { ev.preventDefault(); if (confirm('Remove bookmark?\n' + b.title)) { bookmarks = bookmarks.filter(x => x !== b); store.set('bookmarks', bookmarks); renderBookmarks(); updateNav(); } };
+    bar.appendChild(e);
+  });
+  // popup list
+  const list = $('#bmlist'); list.innerHTML = '';
+  if (!bookmarks.length) list.append(el('div', { className: 'empty', textContent: 'No bookmarks yet.' }));
+  else bookmarks.forEach(b => list.appendChild(itemRow(b, () => { bookmarks = bookmarks.filter(x => x !== b); store.set('bookmarks', bookmarks); renderBookmarks(); updateNav(); })));
+}
+
+// ---- history ----
+function recordHistory(url) {
+  if (!/^https?:/.test(url)) return;
+  const last = history[0];
+  if (last && last.url === url) { last.time = Date.now(); }
+  else history.unshift({ url, title: host(url) || url, time: Date.now() });
+  if (history.length > 500) history.length = 500;
+  store.set('history', history);
+}
+function renderHistory() {
+  const list = $('#hslist'); list.innerHTML = '';
+  if (!history.length) { list.append(el('div', { className: 'empty', textContent: 'No history yet.' })); return; }
+  history.slice(0, 50).forEach(h => list.appendChild(itemRow(h, () => { history = history.filter(x => x !== h); store.set('history', history); renderHistory(); })));
+}
+
+function itemRow(obj, onDel) {
+  const row = el('div', { className: 'item' });
+  const fav = el('span', { className: 'fav', textContent: (host(obj.url)[0] || '•').toUpperCase() });
+  const m = el('div', { className: 'm' });
+  m.append(el('div', { className: 't', textContent: obj.title }), el('div', { className: 'u', textContent: obj.url }));
+  m.onclick = () => { closePopups(); go(obj.url); };
+  const del = el('button', { className: 'del icon sm', textContent: '✕', title: 'Remove' });
+  del.onclick = e => { e.stopPropagation(); onDel(); };
+  row.append(fav, m, del);
+  return row;
+}
+
+// ---- tab strip render ----
+function renderTabs() {
+  const strip = $('#tabstrip'); strip.innerHTML = '';
+  tabs.forEach(t => {
+    const e = el('div', { className: 'tab' + (t.id === activeId ? ' active' : '') });
+    e.append(el('span', { className: 'fav', textContent: t.url === 'drew:start' ? '★' : (host(t.url)[0] || '•').toUpperCase() }),
+             el('span', { className: 'ttl', textContent: t.title || 'New Tab' }));
+    const x = el('button', { className: 'x', textContent: '✕', title: 'Close' });
+    x.onclick = ev => { ev.stopPropagation(); closeTab(t.id); };
+    e.appendChild(x);
+    e.onclick = () => setActive(t.id);
+    e.onauxclick = ev => { if (ev.button === 1) closeTab(t.id); };
+    strip.appendChild(e);
+  });
+  const add = el('button', { id: 'newtab', textContent: '+', title: 'New tab (Ctrl+T)' });
+  add.onclick = () => newTab();
+  strip.appendChild(add);
+}
+
+// ---- address bar + suggestions ----
+const addr = $('#addr');
+addr.addEventListener('focus', () => setTimeout(() => addr.select(), 0));
+addr.addEventListener('keydown', e => {
+  const sg = $('#suggest');
+  const items = [...sg.querySelectorAll('.sg')];
+  let sel = items.findIndex(i => i.classList.contains('sel'));
+  if (e.key === 'Enter') { e.preventDefault(); if (sel >= 0 && items[sel].dataset.url) go(items[sel].dataset.url); else go(addr.value); hideSuggest(); addr.blur(); }
+  else if (e.key === 'Escape') { hideSuggest(); const t = activeTab(); if (t) syncAddr(t); addr.blur(); }
+  else if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); sel = (sel + 1) % items.length; setSel(items, sel); }
+  else if (e.key === 'ArrowUp' && items.length) { e.preventDefault(); sel = (sel - 1 + items.length) % items.length; setSel(items, sel); }
+});
+addr.addEventListener('input', renderSuggest);
+function setSel(items, i) { items.forEach((x, j) => x.classList.toggle('sel', j === i)); }
+function renderSuggest() {
+  const q = addr.value.trim().toLowerCase();
+  const sg = $('#suggest');
+  if (!q) return hideSuggest();
+  const out = [];
+  out.push({ k: looksLikeHost(q) ? '🌐' : '🔍', t: looksLikeHost(q) ? addr.value.trim() : 'Search ' + ENGINES[engine].name + ' for “' + addr.value.trim() + '”', url: addr.value.trim() });
+  const seen = new Set();
+  for (const b of bookmarks) if ((b.url.toLowerCase().includes(q) || b.title.toLowerCase().includes(q)) && !seen.has(b.url)) { out.push({ k: '★', t: b.title, u: b.url, url: b.url }); seen.add(b.url); if (out.length > 8) break; }
+  for (const h of history) if (out.length <= 8 && (h.url.toLowerCase().includes(q) || h.title.toLowerCase().includes(q)) && !seen.has(h.url)) { out.push({ k: '⟲', t: h.title, u: h.url, url: h.url }); seen.add(h.url); }
+  sg.innerHTML = '';
+  out.slice(0, 9).forEach((o, i) => {
+    const d = el('div', { className: 'sg' + (i === 0 ? ' sel' : '') }); d.dataset.url = o.url;
+    d.append(el('span', { className: 'k', textContent: o.k }), el('span', { className: 't', textContent: o.t }));
+    if (o.u) d.append(el('span', { className: 'u', textContent: o.u }));
+    d.onmousedown = e => { e.preventDefault(); go(o.url); hideSuggest(); addr.blur(); };
+    sg.appendChild(d);
+  });
+  const r = $('#omni').getBoundingClientRect();
+  sg.style.left = r.left + 'px'; sg.style.top = (r.bottom + 4) + 'px'; sg.style.width = r.width + 'px';
+  sg.hidden = false;
+}
+function hideSuggest() { $('#suggest').hidden = true; }
+
+// ---- popups ----
+function closePopups() { for (const p of ['#bmpop', '#hspop', '#mpop']) $(p).hidden = true; $('#scrim').hidden = true; }
+function openPopup(sel) { closePopups(); hideSuggest(); $(sel).hidden = false; $('#scrim').hidden = false; }
+$('#scrim').onclick = () => { closePopups(); };
+$('#bmbtn').onclick = () => { renderBookmarks(); openPopup('#bmpop'); };
+$('#hsbtn').onclick = () => { renderHistory(); openPopup('#hspop'); };
+$('#menu').onclick = () => openPopup('#mpop');
+$('#clearhs').onclick = () => { if (confirm('Clear all history?')) { history = []; store.set('history', history); renderHistory(); } };
+
+$('#mpop').addEventListener('click', e => {
+  const a = e.target.closest('[data-a]'); if (!a) return; closePopups();
+  const t = activeTab();
+  switch (a.dataset.a) {
+    case 'newtab': newTab(); break;
+    case 'dup': if (t) newTab(t.url); break;
+    case 'bm': toggleBookmark(); break;
+    case 'copy': if (t && t.url !== 'drew:start') navigator.clipboard?.writeText(t.url).catch(() => {}); break;
+    case 'open': if (t && t.url !== 'drew:start') window.open(t.url, '_blank', 'noopener'); break;
+    case 'clearall': if (confirm('Clear all bookmarks and history?')) { bookmarks = []; history = []; store.set('bookmarks', []); store.set('history', []); renderBookmarks(); updateNav(); } break;
+    case 'about': newTab(); go('drew:start'); setTimeout(() => alert("Drew's Browser — web edition\n\nA browser interface built from scratch in a single HTML file: tabs, bookmarks, history, address bar with suggestions, a start page, and automatic removal of tracking parameters (utm_*, fbclid, gclid and more) from links you open.\n\nPages load in a frame. Sites that block embedding open in a normal Chrome tab. Your bookmarks and history stay on this computer.\n\nMade by Drew."), 50); break;
+  }
+});
+
+// ---- toolbar buttons ----
+$('#back').onclick = back;
+$('#fwd').onclick = fwd;
+$('#reload').onclick = reload;
+$('#home').onclick = () => { const t = activeTab(); if (t) go('drew:start', t); };
+$('#star').onclick = toggleBookmark;
+
+// ---- keyboard shortcuts ----
+document.addEventListener('keydown', e => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 't') { e.preventDefault(); newTab(); }
+  else if (ctrl && e.key === 'w') { e.preventDefault(); if (activeId != null) closeTab(activeId); }
+  else if (ctrl && e.key === 'l') { e.preventDefault(); addr.focus(); }
+  else if (ctrl && e.key === 'd') { e.preventDefault(); toggleBookmark(); }
+  else if (ctrl && e.key === 'h') { e.preventDefault(); renderHistory(); openPopup('#hspop'); }
+  else if (ctrl && e.key === 'r') { e.preventDefault(); reload(); }
+  else if (e.key === 'F5') { e.preventDefault(); reload(); }
+  else if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); back(); }
+  else if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); fwd(); }
+  else if (ctrl && /^[1-9]$/.test(e.key)) { const i = +e.key - 1; if (tabs[i]) { e.preventDefault(); setActive(tabs[i].id); } }
+});
+
+// ---- boot ----
+$('#addr').placeholder = 'Search ' + ENGINES[engine].name + ' or type a web address';
+renderBookmarks();
+newTab('drew:start');
+</script>
+</body>
+</html>
