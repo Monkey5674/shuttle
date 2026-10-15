@@ -221,6 +221,15 @@ const QUICK = [
 
 const TRACKING = new Set(['utm_source','utm_medium','utm_campaign','utm_term','utm_content','utm_id','fbclid','gclid','gclsrc','dclid','msclkid','mc_eid','mc_cid','yclid','igshid','_hsenc','_hsmi','mkt_tok','twclid','ttclid','vero_id','oly_anon_id','oly_enc_id','wickedid','_openstat','ScCid']);
 
+// Hosts known to refuse being shown inside a frame (they send X-Frame-Options
+// or a frame-ancestors policy). We don't even try to embed these; we route
+// them straight to the open-in-a-real-tab panel so nothing looks broken.
+const NO_EMBED = ['google.','youtube.com','youtu.be','facebook.com','instagram.com','twitter.com','x.com','reddit.com','tiktok.com','netflix.com','amazon.','linkedin.com','pinterest.com','twitch.tv','spotify.com','discord.com','roblox.com','microsoft.com','live.com','office.com','github.com','gmail.com','whatsapp.com','snapchat.com','yahoo.com','quora.com','canva.com'];
+function refusesEmbed(url) {
+  const h = host(url);
+  return NO_EMBED.some(d => d.endsWith('.') ? (h === d.slice(0, -1) || h.startsWith(d) || h.includes('.' + d)) : (h === d || h.endsWith('.' + d)));
+}
+
 // ---- url helpers ----
 function host(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } }
 function looksLikeHost(t) {
@@ -271,6 +280,9 @@ function newTab(url = 'drew:start', { activate = true } = {}) {
 
 function wireFrame(tab) {
   tab.frame.addEventListener('load', () => {
+    // Ignore the load event from clearing the frame to about:blank, and from
+    // sites we already know won't embed (their panel must stay visible).
+    if (tab.frame.getAttribute('src') === 'about:blank' || refusesEmbed(tab.url)) return;
     clearTimeout(tab.loadT);
     tab.blocked.classList.remove('show');
     // Same-origin pages (our start page) let us read the title; cross-origin throws.
@@ -285,9 +297,10 @@ function setActive(id) {
   activeId = id;
   for (const t of tabs) {
     const on = t.id === id;
-    t.frame.hidden = !on || t.url === 'drew:start';
+    t.frame.hidden = !on || t.url === 'drew:start' || refusesEmbed(t.url);
     t.blocked.hidden = !on;
     if (!on) t.blocked.classList.remove('show');
+    else if (t.url !== 'drew:start' && refusesEmbed(t.url)) showBlocked(t, t.url);
     t.startEl && (t.startEl.hidden = !on || t.url !== 'drew:start');
   }
   const t = activeTab();
@@ -321,13 +334,20 @@ function go(input, tab = activeTab(), { push = true } = {}) {
     hideStart(tab);
     tab.blocked.classList.remove('show');
     tab.title = host(url) || url;
-    tab.frame.hidden = tab.id !== activeId;
-    tab.frame.src = url;
     recordHistory(url);
-    // If the frame has not fired load in time, the site almost certainly
-    // refused to be embedded. Offer the real-tab fallback.
-    clearTimeout(tab.loadT);
-    tab.loadT = setTimeout(() => showBlocked(tab, url), 3500);
+    if (refusesEmbed(url)) {
+      // Known not to allow embedding: don't show a broken frame at all.
+      tab.frame.src = 'about:blank';
+      tab.frame.hidden = true;
+      if (tab.id === activeId) showBlocked(tab, url);
+    } else {
+      tab.frame.hidden = tab.id !== activeId;
+      tab.frame.src = url;
+      // If the frame has not fired load in time, the site almost certainly
+      // refused to be embedded. Offer the real-tab fallback.
+      clearTimeout(tab.loadT);
+      tab.loadT = setTimeout(() => showBlocked(tab, url), 3000);
+    }
   }
   if (tab.id === activeId) { syncAddr(tab); updateNav(); }
   renderTabs();
@@ -336,12 +356,12 @@ function go(input, tab = activeTab(), { push = true } = {}) {
 function showBlocked(tab, url) {
   const h = host(url) || url;
   tab.blocked.innerHTML = '';
-  const title = el('h2', { textContent: h + " won't open inside a frame" });
+  const title = el('h2', { textContent: h + ' opens in its own tab' });
   const p = el('p');
-  p.innerHTML = 'Many large sites (Google, YouTube, most social media) tell browsers not to display them inside another page, for security. That is the site’s choice, not a block here. Open <span class="host">' + h + '</span> in a normal Chrome tab instead:';
+  p.innerHTML = '<span class="host">' + h + '</span> tells browsers not to display it inside another page, so it can’t show in the frame here. That is the site’s rule, not a block from this page. Click to open it in a normal browser tab:';
   const a = el('a', { href: url, target: '_blank', rel: 'noopener', textContent: 'Open ' + h + ' ↗' });
   const p2 = el('p', { style: 'font-size:12px;margin-top:2px' });
-  p2.textContent = 'Sites like Wikipedia, example.com and many smaller pages do load inside the frame above.';
+  p2.textContent = 'Smaller sites like Wikipedia, MDN and example.com do load right inside the frame.';
   tab.blocked.append(title, p, a, p2);
   tab.blocked.classList.add('show');
 }
